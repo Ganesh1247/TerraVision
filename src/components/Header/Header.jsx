@@ -10,7 +10,8 @@ import {
   Compass,
   FileCode,
   Sparkles,
-  Download
+  Download,
+  Scale
 } from 'lucide-react';
 import OfflineBadge from '../Common/OfflineBadge';
 import SystemHealthModal from './SystemHealthModal';
@@ -74,6 +75,18 @@ export default function Header({
             >
               <Compass className="w-3.5 h-3.5" />
               <span>Mission 3D Studio</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('person2')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+                activeTab === 'person2'
+                  ? 'bg-brand-cyan text-slate-950 font-bold shadow-md shadow-brand-cyan/20'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+              }`}
+            >
+              <Scale className="w-3.5 h-3.5" />
+              <span>Person 2: Metric Analysis</span>
             </button>
 
             <button

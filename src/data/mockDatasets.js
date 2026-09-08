@@ -26,6 +26,32 @@ export const MOCK_DATASETS = [
     defaultHotspots: 'substation'
   },
   {
+    id: 'flight-22-villa',
+    name: 'Flight 22: Modern 2-Story Villa Architecture',
+    badge: '3D Building Reconstruction (High Precision)',
+    scenario: 'Aerial oblique 3D scan of 2-story residential villa with balconies, roof parapets, and canopy pillars',
+    videoFile: 'DJI_VILLA_SCAN_360_PASS.mp4',
+    videoSize: '298.4 MB',
+    duration: '02m 15s',
+    resolution: '3840x2160 (4K UHD) @ 60 FPS',
+    hasImu: true,
+    imuFile: 'villa_scan_synced_imu.csv',
+    imuSize: '11.4 MB',
+    framesCount: 4050,
+    expectedPoints: '1,850,000 pts',
+    expectedMeshFaces: '320,000 faces',
+    expectedAccuracy: '± 0.008 m (0.8 cm)',
+    degradedFlags: {
+      lowLight: false,
+      fogHaze: false,
+      motionBlur: false,
+      noImu: false,
+      lowTexture: false,
+      loopClosureNeeded: false
+    },
+    defaultHotspots: 'villa'
+  },
+  {
     id: 'flight-19-urbancanyon',
     name: 'Flight 19: GPS-Denied Urban Canyon',
     badge: 'Challenging (Reflective Glass & Multi-Path)',

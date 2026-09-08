@@ -7,6 +7,7 @@ import Viewer3D from './components/Viewer3D/Viewer3D';
 import MultiDimensionalConfidencePanel from './components/Confidence/MultiDimensionalConfidencePanel';
 import SessionHistory from './components/History/SessionHistory';
 import ArchitectureOverview from './components/Architecture/ArchitectureOverview';
+import Person2AnalysisStudio from './components/Person2/Person2AnalysisStudio';
 import TelemetryConsole from './components/Telemetry/TelemetryConsole';
 import ExportReportModal from './components/Telemetry/ExportReportModal';
 import { useReconstructionEngine } from './hooks/useReconstructionEngine';
@@ -169,7 +170,15 @@ export default function App() {
           </div>
         )}
 
-        {/* TAB 2: Session History */}
+        {/* TAB 2: Person 2 Metric Analysis Studio */}
+        {activeTab === 'person2' && (
+          <Person2AnalysisStudio
+            selectedDataset={selectedDataset}
+            renderMode={renderMode}
+          />
+        )}
+
+        {/* TAB 3: Session History */}
         {activeTab === 'history' && (
           <SessionHistory onSelectJobForViewer={handleLoadJobIntoViewer} />
         )}

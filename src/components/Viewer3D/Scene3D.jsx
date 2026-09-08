@@ -141,11 +141,13 @@ export default function Scene3D({
       droneFrustumRef.current.lookAt(pos.clone().add(tangent));
     }
 
-    if (beaconGroupRef.current) {
+    if (beaconGroupRef.current && Array.isArray(hotspots) && hotspots.length > 0) {
       const time = state.clock.getElapsedTime();
       beaconGroupRef.current.children.forEach((child, idx) => {
-        child.position.y = (hotspots[idx]?.position[1] || 1) + Math.sin(time * 3 + idx) * 0.08 + 0.3;
-        child.rotation.y = time * 1.5 + idx;
+        if (hotspots[idx] && hotspots[idx].position) {
+          child.position.y = (hotspots[idx].position[1] || 1) + Math.sin(time * 3 + idx) * 0.08 + 0.3;
+          child.rotation.y = time * 1.5 + idx;
+        }
       });
     }
   });
@@ -228,7 +230,135 @@ export default function Scene3D({
       {/* 3D Reconstructed Models */}
       {showMesh && (pipelineState === 'completed' || pipelineState === 'idle' || activeStageIndex >= 7) && (
         <group>
-          {/* DATASET 1 & DEFAULT: Substation Grid */}
+          {/* DATASET: 2-Story Residential Villa (User Reference 3D Model) */}
+          {(datasetType === 'villa' || !datasetType) && (
+            <group position={[0, 0, 0]}>
+              {/* Main 2-Story Villa Building Block */}
+              <mesh position={[0, 1.2, 0]} castShadow receiveShadow>
+                <boxGeometry args={[4.4, 2.4, 3.6]} />
+                <meshStandardMaterial
+                  color={isHeatmap ? '#22C55E' : isHeightmap ? '#10B981' : '#D1D5DB'}
+                  roughness={0.5}
+                  wireframe={isWireframe}
+                />
+              </mesh>
+
+              {/* Roof Slab & Parapet Edge */}
+              <mesh position={[0, 2.45, 0]} receiveShadow>
+                <boxGeometry args={[4.5, 0.12, 3.7]} />
+                <meshStandardMaterial color={isHeatmap ? '#22C55E' : '#E5E7EB'} wireframe={isWireframe} />
+              </mesh>
+
+              {/* Blue Central Roof Stripe */}
+              <mesh position={[0, 2.52, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+                <planeGeometry args={[0.25, 3.5]} />
+                <meshStandardMaterial color="#6366F1" wireframe={isWireframe} />
+              </mesh>
+
+              {/* Main Entrance Porch Canopy (Right Front) */}
+              <group position={[1.4, 0, 1.8]}>
+                {/* Roof Slab */}
+                <mesh position={[0, 1.3, 0.4]} castShadow receiveShadow>
+                  <boxGeometry args={[1.8, 0.15, 1.4]} />
+                  <meshStandardMaterial color={isHeatmap ? '#22C55E' : '#F3F4F6'} wireframe={isWireframe} />
+                </mesh>
+                {/* Reddish-Brown Support Pillars */}
+                <mesh position={[0.7, 0.65, 0.9]} castShadow>
+                  <cylinderGeometry args={[0.07, 0.07, 1.3, 12]} />
+                  <meshStandardMaterial color={isHeatmap ? '#22C55E' : '#991B1B'} wireframe={isWireframe} />
+                </mesh>
+                <mesh position={[-0.7, 0.65, 0.9]} castShadow>
+                  <cylinderGeometry args={[0.07, 0.07, 1.3, 12]} />
+                  <meshStandardMaterial color={isHeatmap ? '#22C55E' : '#991B1B'} wireframe={isWireframe} />
+                </mesh>
+                {/* Porch Slab Base */}
+                <mesh position={[0, 0.05, 0.4]}>
+                  <boxGeometry args={[1.85, 0.1, 1.45]} />
+                  <meshStandardMaterial color="#E5E7EB" wireframe={isWireframe} />
+                </mesh>
+              </group>
+
+              {/* Secondary Front Canopy (Center Front) */}
+              <group position={[-0.6, 0, 1.8]}>
+                <mesh position={[0, 0.85, 0.3]} castShadow>
+                  <boxGeometry args={[1.2, 0.12, 1.0]} />
+                  <meshStandardMaterial color="#F3F4F6" wireframe={isWireframe} />
+                </mesh>
+                <mesh position={[-0.5, 0.42, 0.6]} castShadow>
+                  <cylinderGeometry args={[0.06, 0.06, 0.85, 12]} />
+                  <meshStandardMaterial color="#991B1B" wireframe={isWireframe} />
+                </mesh>
+                <mesh position={[0.4, 0.42, 0.6]} castShadow>
+                  <cylinderGeometry args={[0.06, 0.06, 0.85, 12]} />
+                  <meshStandardMaterial color="#991B1B" wireframe={isWireframe} />
+                </mesh>
+                <mesh position={[0, 0.04, 0.3]}>
+                  <boxGeometry args={[1.25, 0.08, 1.05]} />
+                  <meshStandardMaterial color="#E5E7EB" wireframe={isWireframe} />
+                </mesh>
+              </group>
+
+              {/* Left Side Upper Balconies with Cantilever Overhangs */}
+              <group position={[-2.25, 0, 0]}>
+                {/* Upper Balcony 1 */}
+                <mesh position={[-0.4, 1.5, 0.7]} castShadow>
+                  <boxGeometry args={[0.9, 0.1, 1.1]} />
+                  <meshStandardMaterial color="#F3F4F6" wireframe={isWireframe} />
+                </mesh>
+                <mesh position={[-0.8, 1.65, 0.7]} castShadow>
+                  <boxGeometry args={[0.1, 0.25, 1.1]} />
+                  <meshStandardMaterial color="#E5E7EB" wireframe={isWireframe} />
+                </mesh>
+                {/* Upper Balcony 2 */}
+                <mesh position={[-0.4, 1.5, -0.7]} castShadow>
+                  <boxGeometry args={[0.9, 0.1, 1.1]} />
+                  <meshStandardMaterial color="#F3F4F6" wireframe={isWireframe} />
+                </mesh>
+                <mesh position={[-0.8, 1.65, -0.7]} castShadow>
+                  <boxGeometry args={[0.1, 0.25, 1.1]} />
+                  <meshStandardMaterial color="#E5E7EB" wireframe={isWireframe} />
+                </mesh>
+                {/* Balcony Canopy Sunshade */}
+                <mesh position={[-0.5, 2.0, 0]} castShadow>
+                  <boxGeometry args={[1.1, 0.1, 2.8]} />
+                  <meshStandardMaterial color="#E5E7EB" wireframe={isWireframe} />
+                </mesh>
+              </group>
+
+              {/* Windows & Teal Glass Panes */}
+              {/* Front Windows */}
+              <mesh position={[0.4, 1.7, 1.81]}>
+                <planeGeometry args={[0.8, 0.7]} />
+                <meshStandardMaterial color="#0D9488" roughness={0.1} metalness={0.8} />
+              </mesh>
+              <mesh position={[-1.2, 1.7, 1.81]}>
+                <planeGeometry args={[0.8, 0.7]} />
+                <meshStandardMaterial color="#0D9488" roughness={0.1} metalness={0.8} />
+              </mesh>
+              <mesh position={[0.4, 0.6, 1.81]}>
+                <planeGeometry args={[0.7, 0.6]} />
+                <meshStandardMaterial color="#0D9488" roughness={0.1} metalness={0.8} />
+              </mesh>
+              <mesh position={[-1.2, 0.6, 1.81]}>
+                <planeGeometry args={[0.7, 0.6]} />
+                <meshStandardMaterial color="#0D9488" roughness={0.1} metalness={0.8} />
+              </mesh>
+
+              {/* Large Ground Entrance Glass Door (Under Canopy) */}
+              <mesh position={[1.4, 0.7, 1.81]}>
+                <planeGeometry args={[1.4, 1.0]} />
+                <meshStandardMaterial color="#0D9488" roughness={0.1} metalness={0.9} transparent opacity={0.85} />
+              </mesh>
+
+              {/* Right Side Glass Curtain Wall */}
+              <mesh position={[2.21, 1.2, 0.2]} rotation={[0, Math.PI / 2, 0]}>
+                <planeGeometry args={[1.8, 2.0]} />
+                <meshStandardMaterial color="#0D9488" roughness={0.1} metalness={0.9} transparent opacity={0.85} />
+              </mesh>
+            </group>
+          )}
+
+          {/* DATASET 1: Substation Grid */}
           {datasetType === 'substation' && (
             <group>
               {/* Transformer A */}
@@ -410,7 +540,7 @@ export default function Scene3D({
               position={[hs.position[0], hs.position[1] + 0.3, hs.position[2]]}
               onClick={(e) => {
                 e.stopPropagation();
-                onSelectHotspot(hs);
+                if (onSelectHotspot) onSelectHotspot(hs);
               }}
             >
               {/* 3D Diamond / Octahedron Beacon */}

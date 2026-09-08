@@ -1,4 +1,118 @@
 export const MOCK_HOTSPOTS = {
+  villa: [
+    {
+      id: 'hs-villa-height',
+      title: 'Villa Main Structure — Total Eaves Height',
+      position: [0.0, 2.4, 0.0],
+      category: 'Building Elevation',
+      measurement: {
+        type: 'Total Building Height',
+        value: 8.24,
+        unit: 'm',
+        uncertainty: 0.08,
+        secondaryMetric: {
+          label: 'Roof Area',
+          value: '214.5 m²',
+          uncertainty: '± 1.2 m²'
+        }
+      },
+      confidence: {
+        geometry: 98,
+        depth: 95,
+        scale: 96,
+        semantic: 97,
+        measurement: 96
+      },
+      qualityAssessment: 'Certified High-Precision Grade',
+      statusColor: 'emerald',
+      explanation: 'Complete 360-degree aerial parallax scan. Wall verticality RANSAC error < 0.18cm over 2,400 keyframe matches.',
+      recommendedAction: 'Validated for architectural height clearance & elevation compliance.'
+    },
+    {
+      id: 'hs-villa-facade',
+      title: 'Main Facade — Frontage Width Span',
+      position: [1.8, 1.2, 1.8],
+      category: 'Architectural Dimension',
+      measurement: {
+        type: 'Frontage Span',
+        value: 16.50,
+        unit: 'm',
+        uncertainty: 0.12,
+        secondaryMetric: {
+          label: 'Building Volume',
+          value: '1685.0 m³',
+          uncertainty: '± 14.5 m³'
+        }
+      },
+      confidence: {
+        geometry: 96,
+        depth: 94,
+        scale: 95,
+        semantic: 96,
+        measurement: 95
+      },
+      qualityAssessment: 'Optimal Precision',
+      statusColor: 'emerald',
+      explanation: 'Clear planar corners with zero occlusion. Scale validated against ground plane and entrance pillars.',
+      recommendedAction: 'Ready for CAD floorplan extraction & site surveying.'
+    },
+    {
+      id: 'hs-villa-canopy',
+      title: 'Entrance Canopy — Porch Pillar Height',
+      position: [1.2, 0.6, 2.2],
+      category: 'Support Pillar Clearance',
+      measurement: {
+        type: 'Pillar Height',
+        value: 3.20,
+        unit: 'm',
+        uncertainty: 0.04,
+        secondaryMetric: {
+          label: 'Canopy Slab Width',
+          value: '4.10 m',
+          uncertainty: '± 0.05 m'
+        }
+      },
+      confidence: {
+        geometry: 97,
+        depth: 96,
+        scale: 94,
+        semantic: 98,
+        measurement: 96
+      },
+      qualityAssessment: 'High Confidence (Structural Pillar)',
+      statusColor: 'emerald',
+      explanation: 'Distinct reddish-brown pillar geometry mapped with 1.4mm surface resolution.',
+      recommendedAction: 'Confirmed structural pillar dimensions.'
+    },
+    {
+      id: 'hs-villa-balcony',
+      title: 'Upper Floor — Cantilever Balcony Overhang',
+      position: [-2.1, 1.6, 0.4],
+      category: 'Cantilever Overhang',
+      measurement: {
+        type: 'Overhang Projection',
+        value: 1.45,
+        unit: 'm',
+        uncertainty: 0.03,
+        secondaryMetric: {
+          label: 'Balcony Width',
+          value: '2.80 m',
+          uncertainty: '± 0.04 m'
+        }
+      },
+      confidence: {
+        geometry: 95,
+        depth: 92,
+        scale: 94,
+        semantic: 95,
+        measurement: 94
+      },
+      qualityAssessment: 'High Precision Overhang',
+      statusColor: 'emerald',
+      explanation: 'Cantilever balcony projection verified against main wall reference plane.',
+      recommendedAction: 'Suitable for structural load audit.'
+    }
+  ],
   substation: [
     {
       id: 'hs-trans-a',
