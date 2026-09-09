@@ -1,0 +1,151 @@
+# ==============================================================================
+# TerraVision — End-to-End Pipeline Tests
+# Runs the heavy reconstruction pipeline test on schedule (nightly) and on
+# explicit workflow_dispatch. Requires larger runners and optional GPU labels.
+# ==============================================================================
+
+name: 🔬 E2E Pipeline Tests
+
+on:
+  schedule:
+    # Nightly at 00:30 UTC on main branch
+    - cron: "30 0 * * *"
+  workflow_dispatch:
+    inputs:
+      python_version:
+        description: "Python version to use"
+        required: false
+        default: "3.11"
+        type: choice
+        options: ["3.10", "3.11"]
+      run_gpu_tests:
+        description: "Run GPU-accelerated tests (requires self-hosted GPU runner)"
+        required: false
+        default: false
+        type: boolean
+
+concurrency:
+  group: e2e-pipeline-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  TV_AIR_GAP_MODE: "True"
+  TV_ALLOW_ONLINE_FALLBACKS: "False"
+  PYTHONUNBUFFERED: "1"
+
+jobs:
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Job 1 — Full Pipeline E2E on CPU (always runs on GitHub-hosted runner)
+  # ─────────────────────────────────────────────────────────────────────────────
+  e2e-cpu:
+    name: 🔬 E2E Pipeline (CPU)
+    runs-on: ubuntu-22.04
+    timeout-minutes: 60
+
+    steps:
+      - name: ⬇️  Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🐍 Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ inputs.python_version || '3.11' }}
+          cache: "pip"
+
+      - name: 🖥️  Install system libraries
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            libgl1-mesa-glx \
+            libglib2.0-0 \
+            libsm6 \
+            libxext6 \
+            ffmpeg \
+            sqlite3
+
+      - name: 📦 Install Python dependencies (CPU torch)
+        run: |
+          python -m pip install --upgrade pip
+          pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+          pip install -r backend/requirements.txt
+
+      - name: 🔬 Run E2E pipeline test
+        run: |
+          pytest backend/tests/test_e2e_pipeline.py \
+            -v \
+            --tb=long \
+            --junitxml=reports/e2e-test-results.xml \
+            --timeout=3000
+        env:
+          TV_KEYFRAME_STEP: "5"        # Subsampled for CI speed
+          TV_SCALE_RECOVERY_MODE: "imu_fused"
+
+      - name: 📊 Upload E2E results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: e2e-test-results
+          path: |
+            reports/
+            backend/storage/
+          retention-days: 7
+
+      - name: 📣 Notify on failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue?.number || 0,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '❌ **E2E Pipeline test failed!** Check the [workflow run](' + context.serverUrl + '/' + context.repo.owner + '/' + context.repo.repo + '/actions/runs/' + context.runId + ') for details.'
+            }).catch(() => {
+              core.warning('Could not post comment (not a PR context)');
+            });
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Job 2 — GPU Pipeline Test (self-hosted runner tagged with 'gpu')
+  # Only runs when explicitly triggered with run_gpu_tests=true
+  # ─────────────────────────────────────────────────────────────────────────────
+  e2e-gpu:
+    name: 🎮 E2E Pipeline (GPU — Jetson/CUDA)
+    runs-on: [self-hosted, gpu, jetson-agx-orin]
+    timeout-minutes: 45
+    if: ${{ inputs.run_gpu_tests == true }}
+
+    steps:
+      - name: ⬇️  Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🐍 Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ inputs.python_version || '3.11' }}
+
+      - name: 📦 Install dependencies (GPU torch)
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements.txt
+
+      - name: 🎮 Verify CUDA availability
+        run: |
+          python -c "import torch; print('CUDA:', torch.cuda.is_available()); print('Device:', torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'N/A')"
+
+      - name: 🔬 Run full E2E pipeline test with GPU
+        run: |
+          pytest backend/tests/test_e2e_pipeline.py \
+            -v \
+            --tb=long \
+            --junitxml=reports/e2e-gpu-test-results.xml
+        env:
+          TV_TRT_FP16_ENABLED: "True"
+          CUDA_VISIBLE_DEVICES: "0"
+
+      - name: 📊 Upload GPU E2E results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: e2e-gpu-test-results
+          path: reports/
+          retention-days: 14

@@ -1,0 +1,82 @@
+# ==============================================================================
+# TerraVision — Dependency Updates via Dependabot
+# Keeps npm, pip, and GitHub Actions dependencies patched automatically.
+# ==============================================================================
+
+version: 2
+
+updates:
+  # ── Node.js / npm (Frontend) ─────────────────────────────────────────────────
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Asia/Kolkata"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "Ganesh1247"
+    labels:
+      - "dependencies"
+      - "frontend"
+    commit-message:
+      prefix: "npm"
+    groups:
+      react-ecosystem:
+        patterns:
+          - "react*"
+          - "@react*"
+          - "framer-motion"
+      three-ecosystem:
+        patterns:
+          - "three*"
+          - "@react-three*"
+      vite-build:
+        patterns:
+          - "vite*"
+          - "@vitejs*"
+          - "postcss*"
+          - "tailwindcss*"
+          - "autoprefixer*"
+
+  # ── Python / pip (Backend) ────────────────────────────────────────────────────
+  - package-ecosystem: "pip"
+    directory: "/backend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Asia/Kolkata"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "Ganesh1247"
+    labels:
+      - "dependencies"
+      - "backend"
+    commit-message:
+      prefix: "pip"
+
+  # ── GitHub Actions ────────────────────────────────────────────────────────────
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Asia/Kolkata"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "Ganesh1247"
+    labels:
+      - "dependencies"
+      - "github-actions"
+    commit-message:
+      prefix: "ci"
+    groups:
+      actions-core:
+        patterns:
+          - "actions/*"
+      docker-actions:
+        patterns:
+          - "docker/*"

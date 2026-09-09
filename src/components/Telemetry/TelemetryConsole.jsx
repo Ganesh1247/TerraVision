@@ -1,19 +1,27 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Terminal, Copy, Check, Trash2, Filter } from 'lucide-react';
+import { Terminal, Copy, Check, Trash2, ChevronDown, ChevronUp, Filter } from 'lucide-react';
 
-export default function TelemetryConsole({ logs = [], onClear }) {
+const LEVEL_STYLES = {
+  success: { text: 'text-[var(--accent-emerald)]', badge: 'tv-badge-emerald' },
+  warning: { text: 'text-[var(--accent-amber)]',   badge: 'tv-badge-amber'   },
+  error:   { text: 'text-[var(--accent-rose)]',    badge: 'tv-badge-rose'    },
+  info:    { text: 'text-[var(--accent-cyan)]',    badge: 'tv-badge-cyan'    },
+};
+
+export default function TelemetryConsole({ logs = [] }) {
   const [filterLevel, setFilterLevel] = useState('all');
-  const [copied, setCopied] = useState(false);
+  const [copied, setCopied]           = useState(false);
+  const [paused, setPaused]           = useState(false);
+  const [expanded, setExpanded]       = useState(true);
   const logEndRef = useRef(null);
 
-  const filteredLogs = logs.filter(l => {
-    if (filterLevel === 'all') return true;
-    return l.level === filterLevel;
-  });
+  const filteredLogs = logs.filter(l =>
+    filterLevel === 'all' || l.level === filterLevel
+  );
 
   useEffect(() => {
-    logEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [logs]);
+    if (!paused) logEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [logs, paused]);
 
   const handleCopy = () => {
     const text = filteredLogs.map(l => `[${l.timestamp}] [${l.tag}] ${l.message}`).join('\n');
@@ -22,66 +30,116 @@ export default function TelemetryConsole({ logs = [], onClear }) {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const getTagColor = (level) => {
-    if (level === 'success') return 'text-emerald-400 bg-emerald-950/60 border-emerald-500/30';
-    if (level === 'warning') return 'text-amber-400 bg-amber-950/60 border-amber-500/30';
-    if (level === 'error') return 'text-red-400 bg-red-950/60 border-red-500/30';
-    return 'text-brand-cyan bg-cyan-950/60 border-cyan-500/30';
-  };
+  const levelOptions = ['all', 'info', 'success', 'warning', 'error'];
+  const counts = logs.reduce((acc, l) => { acc[l.level] = (acc[l.level] || 0) + 1; return acc; }, {});
 
   return (
-    <div className="rounded-xl bg-dark-950 border border-slate-800 flex flex-col h-64 overflow-hidden font-mono text-xs">
-      {/* Console Header */}
-      <div className="px-3 py-2 bg-dark-900 border-b border-slate-800 flex items-center justify-between">
-        <div className="flex items-center gap-2 text-slate-300">
-          <Terminal className="w-4 h-4 text-brand-cyan" />
-          <span className="font-bold uppercase tracking-wider text-[11px]">
-            Real-Time Edge Daemon Telemetry Stream
+    <div className="tv-card overflow-hidden" style={{ fontFamily: 'var(--font-mono)' }}>
+      {/* Header */}
+      <div className="px-3 py-2.5 flex items-center justify-between border-b border-[var(--border-subtle)]"
+        style={{ background: 'var(--bg-surface)' }}>
+        <div className="flex items-center gap-2">
+          <Terminal className="w-3.5 h-3.5 text-[var(--accent-cyan)]" />
+          <span className="text-[11px] font-bold uppercase tracking-widest" style={{ color: 'var(--text-primary)' }}>
+            Edge Daemon Telemetry
           </span>
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+          <span className="tv-live-dot" />
+          {/* Log counts */}
+          <div className="flex gap-1 ml-1">
+            {counts.error   > 0 && <span className="tv-badge tv-badge-rose">{counts.error}E</span>}
+            {counts.warning > 0 && <span className="tv-badge tv-badge-amber">{counts.warning}W</span>}
+          </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          {/* Filter Dropdown */}
+        <div className="flex items-center gap-1">
+          {/* Filter */}
           <select
             value={filterLevel}
-            onChange={(e) => setFilterLevel(e.target.value)}
-            className="bg-dark-950 border border-slate-800 text-slate-300 text-[10px] rounded px-2 py-0.5"
+            onChange={e => setFilterLevel(e.target.value)}
+            className="tv-input py-0.5 px-2 text-[10px] h-6 w-auto"
+            style={{ minWidth: 70 }}
           >
-            <option value="all">All Modules</option>
-            <option value="info">Info</option>
-            <option value="success">Success</option>
-            <option value="warning">Warnings</option>
-            <option value="error">Errors</option>
+            {levelOptions.map(l => (
+              <option key={l} value={l}>{l === 'all' ? 'All' : l.charAt(0).toUpperCase() + l.slice(1)}</option>
+            ))}
           </select>
 
-          {/* Copy logs */}
+          {/* Pause */}
+          <button
+            onClick={() => setPaused(p => !p)}
+            className={`tv-btn tv-btn-sm tv-btn-ghost px-2 py-0.5 text-[10px] ${paused ? 'border-[var(--accent-amber)] text-[var(--accent-amber)]' : ''}`}
+            title={paused ? 'Resume auto-scroll' : 'Pause auto-scroll'}
+          >
+            {paused ? '▶' : '⏸'}
+          </button>
+
+          {/* Copy */}
           <button
             onClick={handleCopy}
-            className="p-1 rounded text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
-            title="Copy logs to clipboard"
+            className="tv-btn tv-btn-sm tv-btn-ghost tv-btn-icon"
+            title="Copy all logs"
           >
-            {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+            {copied
+              ? <Check className="w-3.5 h-3.5 text-[var(--accent-emerald)]" />
+              : <Copy className="w-3.5 h-3.5" />
+            }
+          </button>
+
+          {/* Expand / Collapse */}
+          <button
+            onClick={() => setExpanded(e => !e)}
+            className="tv-btn tv-btn-sm tv-btn-ghost tv-btn-icon"
+            title={expanded ? 'Collapse' : 'Expand'}
+          >
+            {expanded
+              ? <ChevronUp className="w-3.5 h-3.5" />
+              : <ChevronDown className="w-3.5 h-3.5" />
+            }
           </button>
         </div>
       </div>
 
-      {/* Logs Scroll Area */}
-      <div className="flex-1 p-3 overflow-y-auto space-y-1.5 text-[11px] bg-dark-950/90 selection:bg-brand-cyan/20">
-        {filteredLogs.map((log, idx) => (
-          <div key={idx} className="flex items-start gap-2 leading-relaxed">
-            <span className="text-slate-600 shrink-0 select-none">[{log.timestamp}]</span>
-            <span className={`px-1 rounded border text-[10px] uppercase shrink-0 ${getTagColor(log.level)}`}>
-              {log.tag}
-            </span>
-            <span className={`break-all ${
-              log.level === 'error' ? 'text-red-400 font-semibold' : log.level === 'warning' ? 'text-amber-300' : 'text-slate-300'
-            }`}>
-              {log.message}
-            </span>
-          </div>
-        ))}
-        <div ref={logEndRef} />
+      {/* Log area */}
+      {expanded && (
+        <div
+          className="h-52 overflow-y-auto tv-scroll-panel p-3 space-y-1.5 text-[11px]"
+          style={{ background: 'var(--bg-base)', fontFamily: '"JetBrains Mono", monospace' }}
+        >
+          {filteredLogs.length === 0 && (
+            <p className="text-center py-8" style={{ color: 'var(--text-muted)' }}>
+              No log entries yet. Start a reconstruction to see telemetry.
+            </p>
+          )}
+          {filteredLogs.map((log, idx) => {
+            const style = LEVEL_STYLES[log.level] || LEVEL_STYLES.info;
+            return (
+              <div key={idx} className="flex items-start gap-2 leading-relaxed group animate-fade-in">
+                <span className="shrink-0 select-none text-[10px]" style={{ color: 'var(--text-muted)' }}>
+                  {log.timestamp}
+                </span>
+                <span className={`tv-badge ${style.badge} shrink-0 text-[9px]`}>
+                  {log.tag}
+                </span>
+                <span className={`break-all flex-1 ${style.text} group-hover:opacity-80 transition-opacity`}>
+                  {log.message}
+                </span>
+              </div>
+            );
+          })}
+          <div ref={logEndRef} />
+        </div>
+      )}
+
+      {/* Footer bar */}
+      <div className="px-3 py-1.5 flex items-center justify-between border-t border-[var(--border-subtle)]"
+        style={{ background: 'var(--bg-surface)' }}>
+        <span className="text-[10px]" style={{ color: 'var(--text-muted)', fontFamily: '"JetBrains Mono", monospace' }}>
+          {filteredLogs.length} / {logs.length} entries
+          {paused && <span className="ml-2 text-[var(--accent-amber)]">⏸ PAUSED</span>}
+        </span>
+        <span className="text-[10px]" style={{ color: 'var(--text-muted)', fontFamily: '"JetBrains Mono", monospace' }}>
+          AIR-GAP · EDGE KERNEL
+        </span>
       </div>
     </div>
   );

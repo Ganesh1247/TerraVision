@@ -1,0 +1,161 @@
+# ==============================================================================
+# TerraVision — Frontend CI (React / Vite)
+# Runs on every push/PR touching frontend code or its dependencies.
+# Executes linting, type-check, build validation, and bundle size reporting.
+# ==============================================================================
+
+name: ⚛️ Frontend CI
+
+on:
+  push:
+    branches: [main, develop, "feature/**", "fix/**", "hotfix/**"]
+    paths:
+      - "src/**"
+      - "index.html"
+      - "vite.config.js"
+      - "tailwind.config.js"
+      - "postcss.config.js"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/ci-frontend.yml"
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - "src/**"
+      - "index.html"
+      - "vite.config.js"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/ci-frontend.yml"
+
+concurrency:
+  group: frontend-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Job 1 — Lint & Format Check
+  # ─────────────────────────────────────────────────────────────────────────────
+  lint:
+    name: 🔍 Lint & Format
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+
+    steps:
+      - name: ⬇️  Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🟢 Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: 📦 Install dependencies
+        run: npm ci
+
+      - name: 🔎 Run ESLint
+        run: |
+          # Install eslint if no config exists yet — non-blocking
+          npx eslint src/ --ext .js,.jsx,.ts,.tsx \
+            --format @eslint/json \
+            --output-file reports/eslint-report.json \
+            || npx eslint src/ --ext .js,.jsx,.ts,.tsx
+        continue-on-error: true
+
+      - name: 📊 Upload lint results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: eslint-report
+          path: reports/
+          retention-days: 7
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Job 2 — Production Build Validation
+  # ─────────────────────────────────────────────────────────────────────────────
+  build:
+    name: 🏗️ Production Build
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+
+    steps:
+      - name: ⬇️  Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🟢 Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: 📦 Install dependencies
+        run: npm ci
+
+      - name: 🏗️ Build production bundle
+        run: npm run build
+        env:
+          NODE_ENV: production
+
+      - name: 📏 Report bundle sizes
+        run: |
+          echo "### 📦 Bundle Size Report" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          du -sh dist/ >> $GITHUB_STEP_SUMMARY
+          echo "--- Asset breakdown ---" >> $GITHUB_STEP_SUMMARY
+          find dist/ -type f | sort | xargs ls -lh | awk '{print $5, $9}' >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      - name: 📊 Upload production build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: terravision-frontend-dist
+          path: dist/
+          retention-days: 7
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Job 3 — Accessibility & Preview Quality Gate
+  # ─────────────────────────────────────────────────────────────────────────────
+  accessibility:
+    name: ♿ Accessibility Audit
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+    needs: build
+
+    steps:
+      - name: ⬇️  Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🟢 Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: 📦 Install dependencies
+        run: npm ci
+
+      - name: ⬇️  Download production build
+        uses: actions/download-artifact@v4
+        with:
+          name: terravision-frontend-dist
+          path: dist/
+
+      - name: ♿ Run axe-core accessibility audit
+        run: |
+          npm install --save-dev @axe-core/cli serve
+          npx serve dist/ -p 4173 &
+          sleep 5
+          npx axe http://localhost:4173 \
+            --reporter json \
+            --save reports/axe-report.json \
+            || true
+        continue-on-error: true
+
+      - name: 📊 Upload accessibility report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: accessibility-report
+          path: reports/
+          retention-days: 14

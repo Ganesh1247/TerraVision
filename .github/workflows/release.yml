@@ -1,0 +1,231 @@
+# ==============================================================================
+# TerraVision — Release Workflow
+# Triggered when a semantic version tag (v*.*.*) is pushed.
+# Builds the frontend, packages the backend, creates a GitHub Release with
+# attached artifacts, and generates a changelog from commit history.
+# ==============================================================================
+
+name: 🚀 Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag (e.g. v1.2.3)"
+        required: true
+        type: string
+      prerelease:
+        description: "Mark as pre-release?"
+        required: false
+        default: false
+        type: boolean
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Job 1 — Build Frontend Production Bundle
+  # ─────────────────────────────────────────────────────────────────────────────
+  build-frontend:
+    name: ⚛️  Build Frontend
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+
+    steps:
+      - name: ⬇️  Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🟢 Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: 📦 Install dependencies
+        run: npm ci
+
+      - name: 🏗️  Build production bundle
+        run: npm run build
+        env:
+          NODE_ENV: production
+          VITE_APP_VERSION: ${{ github.ref_name || inputs.tag }}
+
+      - name: 📦 Package frontend artifact
+        run: |
+          tar -czf terravision-frontend-${{ github.ref_name || inputs.tag }}.tar.gz dist/
+
+      - name: 📊 Upload frontend build
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: terravision-frontend-${{ github.ref_name || inputs.tag }}.tar.gz
+          retention-days: 7
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Job 2 — Package Backend Source Distribution
+  # ─────────────────────────────────────────────────────────────────────────────
+  build-backend:
+    name: 🐍 Package Backend
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+
+    steps:
+      - name: ⬇️  Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🐍 Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: 📦 Package backend source
+        run: |
+          tar -czf terravision-backend-${{ github.ref_name || inputs.tag }}.tar.gz \
+            --exclude="backend/__pycache__" \
+            --exclude="backend/**/__pycache__" \
+            --exclude="backend/storage/*.db" \
+            --exclude="backend/offline_weights/**/*.pt" \
+            --exclude="backend/offline_weights/**/*.engine" \
+            backend/ \
+            pytest.ini
+
+      - name: 📊 Upload backend package
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-dist
+          path: terravision-backend-${{ github.ref_name || inputs.tag }}.tar.gz
+          retention-days: 7
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Job 3 — Run Fast Smoke Tests Before Release
+  # ─────────────────────────────────────────────────────────────────────────────
+  smoke-test:
+    name: 💨 Smoke Tests
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+
+    steps:
+      - name: ⬇️  Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🐍 Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: 🖥️  Install system dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            libgl1-mesa-glx libglib2.0-0 libsm6 libxext6 ffmpeg sqlite3
+
+      - name: 📦 Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+          pip install -r backend/requirements.txt
+
+      - name: 💨 Run smoke test suite (health, metrics, ingestion)
+        run: |
+          pytest backend/tests/test_api_endpoints.py \
+                 backend/tests/test_ingestion.py \
+                 backend/tests/test_preprocessing.py \
+            -v \
+            --tb=short \
+            --junitxml=reports/smoke-test-results.xml
+        env:
+          TV_AIR_GAP_MODE: "True"
+
+      - name: 📊 Upload smoke test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: smoke-test-results
+          path: reports/
+          retention-days: 7
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Job 4 — Create GitHub Release
+  # ─────────────────────────────────────────────────────────────────────────────
+  release:
+    name: 📦 Create GitHub Release
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    needs: [build-frontend, build-backend, smoke-test]
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: ⬇️  Checkout repository (full history for changelog)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: ⬇️  Download frontend artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: release-assets/
+
+      - name: ⬇️  Download backend artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: backend-dist
+          path: release-assets/
+
+      - name: 📝 Generate Changelog
+        id: changelog
+        run: |
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          if [ -n "$PREV_TAG" ]; then
+            CHANGELOG=$(git log ${PREV_TAG}..HEAD --pretty=format:"- %s (%h)" --no-merges)
+          else
+            CHANGELOG=$(git log --pretty=format:"- %s (%h)" --no-merges -30)
+          fi
+          echo "CHANGELOG<<EOF" >> $GITHUB_ENV
+          echo "$CHANGELOG" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+
+      - name: 🚀 Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name || inputs.tag }}
+          name: "TerraVision ${{ github.ref_name || inputs.tag }}"
+          prerelease: ${{ inputs.prerelease || false }}
+          generate_release_notes: true
+          body: |
+            ## 🛰️ TerraVision Edge Reconstruction System
+
+            **Release**: `${{ github.ref_name || inputs.tag }}`
+            **Commit**: `${{ github.sha }}`
+            **Target**: NVIDIA Jetson AGX Orin (aarch64) + x86_64
+
+            ### ✨ What's Changed
+            ${{ env.CHANGELOG }}
+
+            ### 📦 Artifacts
+            | Artifact | Description |
+            |----------|-------------|
+            | `terravision-frontend-*.tar.gz` | Production React/Vite dashboard bundle |
+            | `terravision-backend-*.tar.gz` | FastAPI backend source (excl. model weights) |
+
+            ### 🐳 Docker Image
+            ```bash
+            docker pull ghcr.io/${{ github.repository_owner }}/terravision-edge:${{ github.ref_name || inputs.tag }}
+            ```
+
+            ### 🚀 Quick Start
+            ```bash
+            # Edge deployment
+            docker-compose -f backend/deployment/docker-compose.yml up -d
+            ```
+          files: |
+            release-assets/terravision-frontend-*.tar.gz
+            release-assets/terravision-backend-*.tar.gz

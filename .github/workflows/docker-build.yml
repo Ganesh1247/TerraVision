@@ -1,0 +1,195 @@
+# ==============================================================================
+# TerraVision — Docker Build & Push
+# Builds the NVIDIA L4T-based edge Docker image and pushes to GHCR.
+# Targets both x86_64 (CI validation) and aarch64 (Jetson production).
+# ==============================================================================
+
+name: 🐳 Docker Build & Push
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*.*.*"]
+  pull_request:
+    branches: [main]
+    paths:
+      - "backend/**"
+      - ".github/workflows/docker-build.yml"
+  workflow_dispatch:
+    inputs:
+      push_image:
+        description: "Push image to GHCR after build"
+        required: false
+        default: false
+        type: boolean
+
+concurrency:
+  group: docker-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository_owner }}/terravision-edge
+
+jobs:
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Job 1 — Build & Push Multi-Arch Image
+  # ─────────────────────────────────────────────────────────────────────────────
+  build-and-push:
+    name: 🐳 Build Docker Image
+    runs-on: ubuntu-22.04
+    timeout-minutes: 60
+
+    permissions:
+      contents: read
+      packages: write
+      id-token: write   # For OIDC / cosign signing
+
+    outputs:
+      image-digest: ${{ steps.build.outputs.digest }}
+      image-tags: ${{ steps.meta.outputs.tags }}
+
+    steps:
+      - name: ⬇️  Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🔧 Set up QEMU (for cross-compile aarch64)
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: linux/amd64,linux/arm64
+
+      - name: 🔧 Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver-opts: |
+            image=moby/buildkit:latest
+            network=host
+
+      - name: 🔑 Log in to GitHub Container Registry
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 🏷️  Extract Docker metadata (tags & labels)
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix=sha-,format=short
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+          labels: |
+            org.opencontainers.image.title=TerraVision Edge
+            org.opencontainers.image.description=Air-gapped offline drone 3D reconstruction system (SIH26158)
+            org.opencontainers.image.vendor=TerraVision
+
+      - name: 🏗️  Build (and push) Docker image
+        id: build
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: backend/deployment/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: ${{ github.event_name != 'pull_request' || inputs.push_image == true }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            BUILD_DATE=${{ github.event.repository.updated_at }}
+            GIT_SHA=${{ github.sha }}
+
+      - name: 📝 Write image digest to summary
+        run: |
+          echo "### 🐳 Docker Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "| Key | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| **Image** | \`${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Digest** | \`${{ steps.build.outputs.digest }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Tags** | \`${{ steps.meta.outputs.tags }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Platforms** | linux/amd64, linux/arm64 |" >> $GITHUB_STEP_SUMMARY
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Job 2 — Docker Image Vulnerability Scan (Trivy)
+  # ─────────────────────────────────────────────────────────────────────────────
+  scan:
+    name: 🔒 Image Vulnerability Scan
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    needs: build-and-push
+    if: github.event_name != 'pull_request'
+
+    permissions:
+      security-events: write
+      contents: read
+
+    steps:
+      - name: ⬇️  Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🔑 Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 🔒 Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
+          format: "sarif"
+          output: "reports/trivy-results.sarif"
+          severity: "CRITICAL,HIGH"
+          ignore-unfixed: true
+
+      - name: 📤 Upload Trivy SARIF to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: "reports/trivy-results.sarif"
+          category: "trivy-docker-scan"
+
+      - name: 📊 Upload scan reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: docker-security-scan
+          path: reports/
+          retention-days: 30
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Job 3 — Sign Image with Cosign (production tags only)
+  # ─────────────────────────────────────────────────────────────────────────────
+  sign:
+    name: ✍️  Sign Image (Cosign)
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    needs: [build-and-push, scan]
+    if: startsWith(github.ref, 'refs/tags/v')
+
+    permissions:
+      id-token: write
+      packages: write
+
+    steps:
+      - name: 🔑 Install Cosign
+        uses: sigstore/cosign-installer@v3
+
+      - name: 🔑 Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: ✍️  Sign the image with OIDC keyless signing
+        run: |
+          cosign sign --yes \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ needs.build-and-push.outputs.image-digest }}

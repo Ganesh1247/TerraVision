@@ -1,167 +1,130 @@
 import React from 'react';
-import { X, Activity, Cpu, HardDrive, Database, ShieldCheck, Zap, Server } from 'lucide-react';
+import { X, Activity, Cpu, HardDrive, Database, ShieldCheck, Zap, Server, Thermometer } from 'lucide-react';
+
+function MetricRow({ label, value, accent }) {
+  return (
+    <div className="flex justify-between items-center py-1">
+      <span className="text-[11px] font-mono" style={{ color: 'var(--text-muted)' }}>{label}</span>
+      <span className="text-[11px] font-mono font-semibold"
+        style={{ color: accent ? `var(--accent-${accent})` : 'var(--text-primary)' }}>
+        {value}
+      </span>
+    </div>
+  );
+}
+
+function HealthCard({ icon: Icon, title, badge, children, accentColor = 'cyan', barValue, barMax }) {
+  const pct = barMax ? Math.min((barValue / barMax) * 100, 100) : null;
+  const barColor = pct > 85 ? 'var(--accent-rose)' : pct > 65 ? 'var(--accent-amber)' : 'var(--accent-cyan)';
+  return (
+    <div className="tv-surface p-4 space-y-3">
+      <div className="flex items-center justify-between">
+        <span className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider"
+          style={{ color: `var(--accent-${accentColor})` }}>
+          <Icon className="w-3.5 h-3.5" />{title}
+        </span>
+        {badge && (
+          <span className="tv-badge tv-badge-emerald text-[9px]">{badge}</span>
+        )}
+      </div>
+      <div className="tv-divider" />
+      <div className="space-y-0.5">{children}</div>
+      {pct !== null && (
+        <div className="tv-progress-track mt-2">
+          <div className="tv-progress-fill" style={{ width: `${pct}%`, background: barColor }} />
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function SystemHealthModal({ health, isOpen, onClose }) {
   if (!isOpen) return null;
 
+  const gpuPct = (health.gpu.vramUsedGb / health.gpu.vramTotalGb) * 100;
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fadeIn">
-      <div className="relative w-full max-w-2xl bg-dark-850 border border-brand-cyan/30 rounded-xl p-6 shadow-2xl overflow-hidden tech-border-glow">
+    <div className="tv-modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="tv-modal w-full max-w-2xl">
+        {/* Accent top line */}
+        <div className="h-0.5 w-full bg-gradient-to-r from-transparent via-[var(--accent-cyan)] to-transparent rounded-t-2xl" />
+
         {/* Header */}
-        <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border-subtle)]">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
-              <Activity className="w-5 h-5" />
+            <div className="p-2 rounded-xl" style={{ background: 'rgba(52,211,153,0.10)', border: '1px solid rgba(52,211,153,0.3)' }}>
+              <Activity className="w-5 h-5" style={{ color: 'var(--accent-emerald)' }} />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-white flex items-center gap-2">
+              <h3 className="text-base font-bold" style={{ color: 'var(--text-primary)' }}>
                 Edge Node System Diagnostics
-                <span className="text-xs px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-mono">
-                  HTTP 200 OK
-                </span>
+                <span className="tv-badge tv-badge-emerald ml-2">HTTP 200</span>
               </h3>
-              <p className="text-xs text-slate-400 font-mono">
+              <p className="text-[11px] font-mono mt-0.5" style={{ color: 'var(--text-muted)' }}>
                 GET /api/v1/health · Daemon Uptime: {health.uptime}
               </p>
             </div>
           </div>
-          <button 
-            onClick={onClose}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
-          >
-            <X className="w-5 h-5" />
+          <button onClick={onClose} className="tv-btn tv-btn-ghost tv-btn-icon">
+            <X className="w-4 h-4" />
           </button>
         </div>
 
-        {/* Diagnostic Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 my-6">
-          {/* GPU Hardware */}
-          <div className="p-4 rounded-lg bg-dark-800 border border-slate-700/60">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-semibold text-brand-cyan uppercase tracking-wider flex items-center gap-1.5">
-                <Zap className="w-4 h-4" /> Neural GPU Compute
-              </span>
-              <span className="text-xs font-mono text-emerald-400">
-                {health.gpu.tempC.toFixed(0)}°C · {health.gpu.loadPct.toFixed(0)}% Load
-              </span>
-            </div>
-            <div className="space-y-1.5 text-xs text-slate-300 font-mono">
-              <div className="flex justify-between">
-                <span className="text-slate-400">Device:</span>
-                <span className="text-white font-medium">{health.gpu.name}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-400">VRAM Allocation:</span>
-                <span className="text-brand-cyan">{health.gpu.vramUsedGb} GB / {health.gpu.vramTotalGb} GB</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-400">CUDA / TensorRT:</span>
-                <span className="text-emerald-400">{health.gpu.cudaVersion} / {health.gpu.tensorRtStatus}</span>
-              </div>
-            </div>
-            {/* VRAM Bar */}
-            <div className="mt-3 w-full bg-slate-900 rounded-full h-1.5 overflow-hidden">
-              <div 
-                className="bg-brand-cyan h-full rounded-full transition-all duration-500"
-                style={{ width: `${(health.gpu.vramUsedGb / health.gpu.vramTotalGb) * 100}%` }}
-              />
-            </div>
-          </div>
+        {/* Content grid */}
+        <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
 
-          {/* Storage & I/O */}
-          <div className="p-4 rounded-lg bg-dark-800 border border-slate-700/60">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-semibold text-brand-cyan uppercase tracking-wider flex items-center gap-1.5">
-                <HardDrive className="w-4 h-4" /> NVMe Scratch Storage
-              </span>
-              <span className="text-xs font-mono text-emerald-400">I/O {health.system.nvmeReadWriteMb}</span>
-            </div>
-            <div className="space-y-1.5 text-xs text-slate-300 font-mono">
-              <div className="flex justify-between">
-                <span className="text-slate-400">Free Disk Space:</span>
-                <span className="text-white font-medium">{health.system.nvmeFreeGb} GB NVMe PCIe Gen4</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-400">System Memory:</span>
-                <span>{health.system.ramUsedGb} GB / {health.system.ramTotalGb} GB RAM</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-400">CPU Thread Load:</span>
-                <span className="text-emerald-400">{health.system.cpuUsagePct.toFixed(0)}% (16 Cores)</span>
-              </div>
-            </div>
-            <div className="mt-3 w-full bg-slate-900 rounded-full h-1.5 overflow-hidden">
-              <div 
-                className="bg-emerald-500 h-full rounded-full transition-all duration-500"
-                style={{ width: `${(health.system.ramUsedGb / health.system.ramTotalGb) * 100}%` }}
-              />
-            </div>
-          </div>
-
-          {/* Database & VIO Engine */}
-          <div className="p-4 rounded-lg bg-dark-800 border border-slate-700/60">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-semibold text-brand-cyan uppercase tracking-wider flex items-center gap-1.5">
-                <Database className="w-4 h-4" /> SQLite WAL Catalog
-              </span>
-              <span className="text-xs font-mono text-emerald-400">ACID Safe</span>
-            </div>
-            <div className="space-y-1.5 text-xs text-slate-300 font-mono">
-              <div className="flex justify-between">
-                <span className="text-slate-400">Engine Mode:</span>
-                <span className="text-white">{health.database.engine}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-400">Catalog Entries:</span>
-                <span>{health.database.recordsCount} completed runs</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-400">Disk Sync Latency:</span>
-                <span className="text-emerald-400">{health.database.status}</span>
-              </div>
-            </div>
-          </div>
-
-          {/* VIO Odometry Daemon */}
-          <div className="p-4 rounded-lg bg-dark-800 border border-slate-700/60">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-semibold text-brand-cyan uppercase tracking-wider flex items-center gap-1.5">
-                <Server className="w-4 h-4" /> VIO Odometry Daemon
-              </span>
-              <span className="text-xs font-mono text-emerald-400">{health.vioDaemon.frequency}</span>
-            </div>
-            <div className="space-y-1.5 text-xs text-slate-300 font-mono">
-              <div className="flex justify-between">
-                <span className="text-slate-400">VINS-Fusion Core:</span>
-                <span className="text-emerald-400 font-medium">{health.vioDaemon.status}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-400">C++ Thread ID:</span>
-                <span className="text-slate-300">{health.vioDaemon.threadId}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-400">Zero-GPS Fallback:</span>
-                <span className="text-emerald-400 font-semibold">Armed & Ready</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Air-gap guarantee badge */}
-        <div className="p-3 rounded-lg bg-emerald-950/40 border border-emerald-500/30 flex items-center gap-3">
-          <ShieldCheck className="w-5 h-5 text-emerald-400 shrink-0" />
-          <p className="text-xs text-emerald-200">
-            <strong>Zero-Cloud Guarantee:</strong> All feature detection, bundle adjustment, and surface meshing execute strictly inside local hardware RAM and GPU memory. No packets leave the host machine.
-          </p>
-        </div>
-
-        <div className="mt-6 flex justify-end">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 bg-brand-cyan text-slate-950 font-bold text-xs rounded-lg hover:bg-brand-cyan-dark transition-colors"
+          {/* GPU */}
+          <HealthCard
+            icon={Zap} title="Neural GPU Compute" accentColor="cyan"
+            badge={`${health.gpu.loadPct.toFixed(0)}% Load`}
+            barValue={health.gpu.vramUsedGb} barMax={health.gpu.vramTotalGb}
           >
-            Close Diagnostics
-          </button>
+            <MetricRow label="Device" value={health.gpu.name} />
+            <MetricRow label="VRAM" value={`${health.gpu.vramUsedGb.toFixed(1)} / ${health.gpu.vramTotalGb} GB`} accent="cyan" />
+            <MetricRow label="Temperature" value={`${health.gpu.tempC.toFixed(0)}°C`}
+              accent={health.gpu.tempC > 80 ? 'rose' : health.gpu.tempC > 65 ? 'amber' : 'emerald'} />
+            <MetricRow label="CUDA / TensorRT" value={`${health.gpu.cudaVersion} / ${health.gpu.tensorRtStatus}`} accent="emerald" />
+          </HealthCard>
+
+          {/* Storage */}
+          <HealthCard
+            icon={HardDrive} title="NVMe Scratch Storage" accentColor="violet"
+            badge={`I/O ${health.system.nvmeReadWriteMb}`}
+            barValue={health.system.storageUsedGb} barMax={health.system.storageTotalGb}
+          >
+            <MetricRow label="Used / Total"
+              value={`${health.system.storageUsedGb.toFixed(1)} / ${health.system.storageTotalGb} GB`}
+              accent="violet" />
+            <MetricRow label="Read / Write" value={health.system.nvmeReadWriteMb} />
+            <MetricRow label="File System" value="ext4 (WAL-mode SQLite)" />
+          </HealthCard>
+
+          {/* CPU */}
+          <HealthCard
+            icon={Cpu} title="ARM CPU + RAM" accentColor="amber"
+            barValue={health.cpu.loadPct} barMax={100}
+          >
+            <MetricRow label="Load" value={`${health.cpu.loadPct.toFixed(0)}%`}
+              accent={health.cpu.loadPct > 85 ? 'rose' : 'amber'} />
+            <MetricRow label="RAM" value={`${health.cpu.ramUsedGb.toFixed(1)} / ${health.cpu.ramTotalGb} GB`} />
+            <MetricRow label="Threads" value={health.cpu.threads} />
+          </HealthCard>
+
+          {/* Air-gap / mission */}
+          <HealthCard icon={ShieldCheck} title="Air-Gap Verification" accentColor="emerald" badge="SECURE">
+            <MetricRow label="Network Interfaces" value="All Blocked" accent="emerald" />
+            <MetricRow label="GPS / GNSS" value="Disabled" accent="emerald" />
+            <MetricRow label="External Calls" value="0 (Hard Constraint)" accent="emerald" />
+            <MetricRow label="Daemon Mode" value={health.daemon?.mode || 'Offline Edge'} />
+          </HealthCard>
+        </div>
+
+        {/* Footer */}
+        <div className="px-6 py-3 border-t border-[var(--border-subtle)] flex items-center justify-between">
+          <span className="text-[10px] font-mono" style={{ color: 'var(--text-muted)' }}>
+            SIH26158 · Target: NVIDIA Jetson AGX Orin · {new Date().toLocaleTimeString()}
+          </span>
+          <button onClick={onClose} className="tv-btn tv-btn-primary tv-btn-sm">Close</button>
         </div>
       </div>
     </div>

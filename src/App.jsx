@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import confetti from 'canvas-confetti';
+import { useTheme } from './context/ThemeContext';
 import Header from './components/Header/Header';
 import UploadPanel from './components/Upload/UploadPanel';
 import PipelineStatus from './components/Pipeline/PipelineStatus';
@@ -12,86 +13,151 @@ import ExportReportModal from './components/Telemetry/ExportReportModal';
 import { useReconstructionEngine } from './hooks/useReconstructionEngine';
 import { useSystemHealth } from './hooks/useSystemHealth';
 import { MOCK_DATASETS } from './data/mockDatasets';
-import { ShieldCheck, Sparkles, Terminal, Activity, Compass, Cpu, Layers } from 'lucide-react';
+import {
+  Terminal, Activity, Cpu, HardDrive, Thermometer,
+  Zap, BarChart3, Globe, CheckCircle2, Shield, Sparkles
+} from 'lucide-react';
+
+/* ── Small stat pill shown in the info ribbon ─────────────────── */
+function RibbonStat({ icon: Icon, label, value, color = 'cyan' }) {
+  const colorVars = {
+    cyan:    'var(--accent-cyan)',
+    emerald: 'var(--accent-emerald)',
+    amber:   'var(--accent-amber)',
+    violet:  'var(--accent-violet)',
+    rose:    'var(--accent-rose)',
+  };
+  const c = colorVars[color] || colorVars.cyan;
+  return (
+    <div className="tv-stat flex-row items-center gap-2 py-2 px-3 flex">
+      <Icon className="w-3.5 h-3.5 shrink-0" style={{ color: c }} />
+      <div>
+        <div className="tv-stat-value text-sm" style={{ color: 'var(--text-primary)' }}>{value}</div>
+        <div className="tv-stat-label">{label}</div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Completion banner shown when pipeline finishes ───────────── */
+function CompletionBanner({ onDismiss }) {
+  return (
+    <div className="tv-card-accent p-4 animate-slide-up flex items-center justify-between gap-4">
+      <div className="flex items-center gap-3">
+        <div className="p-2.5 rounded-xl" style={{ background: 'rgba(52,211,153,0.12)', border: '1px solid rgba(52,211,153,0.3)' }}>
+          <CheckCircle2 className="w-5 h-5" style={{ color: 'var(--accent-emerald)' }} />
+        </div>
+        <div>
+          <p className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>
+            🎉 Reconstruction Complete!
+          </p>
+          <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>
+            3D model generated with certified metric scale bounds. Export your report below.
+          </p>
+        </div>
+      </div>
+      <div className="flex items-center gap-2 shrink-0">
+        <span className="tv-badge tv-badge-emerald">
+          <Sparkles className="w-3 h-3" /> Ready
+        </span>
+        <button onClick={onDismiss} className="tv-btn tv-btn-ghost tv-btn-sm">
+          Dismiss
+        </button>
+      </div>
+    </div>
+  );
+}
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState('reconstruct'); // 'reconstruct' | 'history' | 'architecture'
-  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
-  const [showConsoleDrawer, setShowConsoleDrawer] = useState(true);
+  const { theme } = useTheme();
+  const [activeTab, setActiveTab]             = useState('reconstruct');
+  const [isExportModalOpen, setIsExportModal] = useState(false);
+  const [showConsole, setShowConsole]         = useState(true);
+  const [showBanner, setShowBanner]           = useState(false);
 
   const systemHealth = useSystemHealth();
 
   const {
-    currentJob,
-    selectedDataset,
-    setSelectedDataset,
-    pipelineState,
-    activeStageIndex,
-    stageProgress,
-    totalProgress,
-    currentAction,
-    activeFallbacks,
-    stageStatuses,
-    degradedOverrides,
-    setDegradedOverrides,
-    logs,
-    addLog,
-    renderMode,
-    setRenderMode,
-    selectedHotspot,
-    setSelectedHotspot,
-    activeHotspotsList,
-    droneCamFollow,
-    setDroneCamFollow,
-    orthoView,
-    setOrthoView,
-    showTrajectory,
-    setShowTrajectory,
-    showRuler,
-    setShowRuler,
-    startReconstruction,
-    retryStage,
-    resetPipeline
+    currentJob, selectedDataset, setSelectedDataset,
+    pipelineState, activeStageIndex, stageProgress, totalProgress,
+    currentAction, activeFallbacks, stageStatuses, degradedOverrides,
+    setDegradedOverrides, logs, addLog, renderMode, setRenderMode,
+    selectedHotspot, setSelectedHotspot, activeHotspotsList,
+    droneCamFollow, setDroneCamFollow, orthoView, setOrthoView,
+    showTrajectory, setShowTrajectory, showRuler, setShowRuler,
+    startReconstruction, retryStage, resetPipeline,
   } = useReconstructionEngine();
 
-  // Trigger celebratory confetti on completion
+  // Confetti + banner on completion
   useEffect(() => {
     if (pipelineState === 'completed') {
-      confetti({
-        particleCount: 80,
-        spread: 70,
-        origin: { y: 0.6 },
-        colors: ['#22D3EE', '#06B6D4', '#22C55E', '#38BDF8']
-      });
+      confetti({ particleCount: 90, spread: 70, origin: { y: 0.55 }, colors: ['#22D3EE', '#34D399', '#A78BFA'] });
+      setShowBanner(true);
     }
   }, [pipelineState]);
 
-  // Load a historic job into 3D viewer
-  const handleLoadJobIntoViewer = (job) => {
-    const matchingDataset = MOCK_DATASETS.find(d => d.name === job.datasetName) || MOCK_DATASETS[0];
-    setSelectedDataset(matchingDataset);
+  const handleLoadJob = (job) => {
+    const ds = MOCK_DATASETS.find(d => d.name === job.datasetName) || MOCK_DATASETS[0];
+    setSelectedDataset(ds);
     setActiveTab('reconstruct');
     addLog('SESSION_LOAD', `Loaded historic session ${job.id} into 3D inspection viewport.`, 'success');
   };
 
+  /* ── Derive ribbon stats from systemHealth ─────────────────── */
+  const ribbonStats = [
+    { icon: Cpu,         label: 'GPU Load',   value: `${systemHealth.gpu.loadPct.toFixed(0)}%`, color: 'cyan' },
+    { icon: Thermometer, label: 'GPU Temp',   value: `${systemHealth.gpu.tempC.toFixed(0)}°C`,  color: systemHealth.gpu.tempC > 75 ? 'rose' : 'emerald' },
+    { icon: HardDrive,   label: 'VRAM',       value: `${systemHealth.gpu.vramUsedGb.toFixed(1)}GB`, color: 'violet' },
+    { icon: Activity,    label: 'CPU',        value: `${systemHealth.cpu.loadPct.toFixed(0)}%`, color: 'amber' },
+    { icon: Globe,       label: 'Network',    value: 'AIR-GAP',  color: 'emerald' },
+    { icon: Shield,      label: 'GPS',        value: 'BLOCKED',  color: 'emerald' },
+  ];
+
   return (
-    <div className="min-h-screen bg-dark-900 text-slate-100 flex flex-col font-sans selection:bg-brand-cyan/20 selection:text-brand-cyan">
-      {/* Top Navigation & Status Bar */}
+    /* Root wrapper — class drives CSS variables */
+    <div
+      className={`min-h-screen flex flex-col font-sans ${theme}`}
+      style={{ background: 'var(--bg-base)', color: 'var(--text-primary)', transition: 'background 0.3s ease, color 0.3s ease' }}
+    >
+      {/* Top Navigation */}
       <Header
         currentJob={currentJob}
         systemHealth={systemHealth}
         activeTab={activeTab}
         setActiveTab={setActiveTab}
-        onOpenExportModal={() => setIsExportModalOpen(true)}
+        onOpenExportModal={() => setIsExportModal(true)}
       />
 
-      {/* Main Content Area */}
-      <main className="flex-1 p-3 sm:p-5 max-w-[1720px] w-full mx-auto">
-        {/* TAB 1: Mission 3D Studio */}
+      {/* System metrics ribbon */}
+      <div
+        className="w-full border-b border-[var(--border-subtle)] overflow-x-auto"
+        style={{ background: 'var(--bg-surface)' }}
+      >
+        <div className="flex items-center gap-2 px-4 lg:px-6 py-1.5 max-w-[1720px] mx-auto min-w-max">
+          {ribbonStats.map((s, i) => (
+            <RibbonStat key={i} {...s} />
+          ))}
+          <div className="ml-auto shrink-0">
+            <span className="tv-badge tv-badge-cyan">
+              <BarChart3 className="w-3 h-3" /> Live Telemetry
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <main className="flex-1 p-3 sm:p-5 max-w-[1720px] w-full mx-auto space-y-4">
+
+        {/* Completion banner */}
+        {showBanner && pipelineState === 'completed' && (
+          <CompletionBanner onDismiss={() => setShowBanner(false)} />
+        )}
+
+        {/* ── TAB: Mission 3D Studio ─────────────────────────────── */}
         {activeTab === 'reconstruct' && (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-5 items-start">
-            
-            {/* Left Column: Upload & Pipeline Status Stepper (5 cols on lg) */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-5 items-start animate-fade-in">
+
+            {/* Left column */}
             <div className="lg:col-span-5 space-y-4">
               <UploadPanel
                 selectedDataset={selectedDataset}
@@ -102,7 +168,6 @@ export default function App() {
                 degradedOverrides={degradedOverrides}
                 setDegradedOverrides={setDegradedOverrides}
               />
-
               <PipelineStatus
                 pipelineState={pipelineState}
                 activeStageIndex={activeStageIndex}
@@ -115,95 +180,99 @@ export default function App() {
               />
             </div>
 
-            {/* Right Column: 3D Viewer + 5D Confidence Panel + Telemetry Console (7 cols on lg) */}
+            {/* Right column */}
             <div className="lg:col-span-7 space-y-4">
-              {/* 3D Viewport */}
-              <div className="w-full">
-                <Viewer3D
-                  renderMode={renderMode}
-                  setRenderMode={setRenderMode}
-                  activeStageIndex={activeStageIndex}
-                  pipelineState={pipelineState}
-                  hotspots={activeHotspotsList}
-                  selectedHotspot={selectedHotspot}
-                  onSelectHotspot={setSelectedHotspot}
-                  showTrajectory={showTrajectory}
-                  setShowTrajectory={setShowTrajectory}
-                  showRuler={showRuler}
-                  setShowRuler={setShowRuler}
-                  droneCamFollow={droneCamFollow}
-                  setDroneCamFollow={setDroneCamFollow}
-                  orthoView={orthoView}
-                  setOrthoView={setOrthoView}
-                  selectedDataset={selectedDataset}
-                />
-              </div>
+              {/* 3D Viewer */}
+              <Viewer3D
+                renderMode={renderMode}
+                setRenderMode={setRenderMode}
+                activeStageIndex={activeStageIndex}
+                pipelineState={pipelineState}
+                hotspots={activeHotspotsList}
+                selectedHotspot={selectedHotspot}
+                onSelectHotspot={setSelectedHotspot}
+                showTrajectory={showTrajectory}
+                setShowTrajectory={setShowTrajectory}
+                showRuler={showRuler}
+                setShowRuler={setShowRuler}
+                droneCamFollow={droneCamFollow}
+                setDroneCamFollow={setDroneCamFollow}
+                orthoView={orthoView}
+                setOrthoView={setOrthoView}
+                selectedDataset={selectedDataset}
+              />
 
-              {/* 5-Dimensional Confidence Panel (Core Differentiator) */}
+              {/* 5D Confidence Panel */}
               <MultiDimensionalConfidencePanel
                 hotspot={selectedHotspot}
                 allHotspots={activeHotspotsList}
                 onSelectHotspot={setSelectedHotspot}
               />
 
-              {/* Real-time Telemetry Terminal Logs */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-xs text-slate-400 font-semibold uppercase tracking-wider px-1">
-                  <span className="flex items-center gap-1.5">
-                    <Terminal className="w-3.5 h-3.5 text-brand-cyan" />
+              {/* Telemetry Console */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="tv-section-label flex-1">
+                    <Terminal className="w-3 h-3" />
                     Edge Kernel Observability Stream
-                  </span>
+                  </div>
                   <button
-                    onClick={() => setShowConsoleDrawer(!showConsoleDrawer)}
-                    className="text-[11px] text-brand-cyan hover:underline cursor-pointer"
+                    onClick={() => setShowConsole(v => !v)}
+                    className="tv-btn tv-btn-ghost tv-btn-sm ml-3"
                   >
-                    {showConsoleDrawer ? 'Hide Logs' : 'Show Logs'}
+                    {showConsole ? 'Hide Logs' : 'Show Logs'}
                   </button>
                 </div>
-                {showConsoleDrawer && (
-                  <TelemetryConsole logs={logs} />
-                )}
+                {showConsole && <TelemetryConsole logs={logs} />}
               </div>
             </div>
-
           </div>
         )}
 
-        {/* TAB 2: Session History */}
+        {/* ── TAB: Session History ────────────────────────────────── */}
         {activeTab === 'history' && (
-          <SessionHistory onSelectJobForViewer={handleLoadJobIntoViewer} />
+          <div className="animate-fade-in">
+            <SessionHistory onSelectJobForViewer={handleLoadJob} />
+          </div>
         )}
 
-        {/* TAB 3: Architecture & Tech Spec */}
+        {/* ── TAB: Architecture ──────────────────────────────────── */}
         {activeTab === 'architecture' && (
-          <ArchitectureOverview />
+          <div className="animate-fade-in">
+            <ArchitectureOverview />
+          </div>
         )}
       </main>
 
-      {/* Global Mission Control Footer */}
-      <footer className="mt-8 border-t border-slate-800/80 bg-dark-950 px-4 sm:px-8 py-4 text-xs font-mono text-slate-400">
-        <div className="max-w-[1720px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block" />
-            <span className="text-white font-bold">TERRA VISION EDGE RECONSTRUCTION SYSTEM</span>
-            <span className="text-slate-600">|</span>
-            <span>SIH26158 Software Category</span>
+      {/* Footer */}
+      <footer
+        className="border-t border-[var(--border-subtle)] px-4 sm:px-8 py-3"
+        style={{ background: 'var(--bg-surface)' }}
+      >
+        <div className="max-w-[1720px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 text-center sm:text-left">
+          <div className="flex items-center gap-2 text-xs" style={{ color: 'var(--text-secondary)' }}>
+            <span className="tv-live-dot" />
+            <span className="font-black tracking-widest" style={{ color: 'var(--text-primary)' }}>
+              TERRA<span style={{ color: 'var(--accent-cyan)' }}>VISION</span>
+            </span>
+            <span style={{ color: 'var(--text-muted)' }}>·</span>
+            <span>SIH26158 · Edge Reconstruction System</span>
           </div>
-
-          <div className="flex items-center gap-4 text-slate-400 text-[11px]">
-            <span>100% Fully Offline</span>
+          <div className="flex items-center gap-3 text-[11px]" style={{ color: 'var(--text-muted)', fontFamily: '"JetBrains Mono", monospace' }}>
+            <span className="tv-badge tv-badge-emerald">100% Offline</span>
+            <span>Zero GPS / GNSS</span>
             <span>·</span>
-            <span>Zero GPS / GNSS Required</span>
+            <span>Certified Metric Scale ± δ</span>
             <span>·</span>
-            <span>Certified Metric Scale Bounds (m ± δ)</span>
+            <span>v1.0.0</span>
           </div>
         </div>
       </footer>
 
-      {/* Export Report Modal */}
+      {/* Export modal */}
       <ExportReportModal
         isOpen={isExportModalOpen}
-        onClose={() => setIsExportModalOpen(false)}
+        onClose={() => setIsExportModal(false)}
         currentJob={currentJob}
         selectedDataset={selectedDataset}
       />

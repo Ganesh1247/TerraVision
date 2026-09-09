@@ -1,0 +1,185 @@
+# ==============================================================================
+# TerraVision — Backend CI (Python / FastAPI)
+# Runs on every push/PR touching backend code or its dependencies.
+# Executes linting, unit tests, integration tests, and coverage reporting.
+# ==============================================================================
+
+name: 🐍 Backend CI
+
+on:
+  push:
+    branches: [main, develop, "feature/**", "fix/**", "hotfix/**"]
+    paths:
+      - "backend/**"
+      - "pytest.ini"
+      - ".github/workflows/ci-backend.yml"
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - "backend/**"
+      - "pytest.ini"
+      - ".github/workflows/ci-backend.yml"
+
+concurrency:
+  group: backend-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHONUNBUFFERED: "1"
+  TV_AIR_GAP_MODE: "True"
+  TV_ALLOW_ONLINE_FALLBACKS: "False"
+
+jobs:
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Job 1 — Linting & Static Analysis
+  # ─────────────────────────────────────────────────────────────────────────────
+  lint:
+    name: 🔍 Lint & Type Check
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+
+    steps:
+      - name: ⬇️  Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🐍 Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: 📦 Install linting dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install ruff mypy types-aiofiles
+
+      - name: 🔎 Run Ruff linter
+        run: |
+          ruff check backend/ --output-format=github
+
+      - name: 🔎 Run Ruff formatter check
+        run: |
+          ruff format backend/ --check
+
+      - name: 🔎 Run mypy type checking
+        run: |
+          mypy backend/app --ignore-missing-imports --no-strict-optional
+        continue-on-error: true  # Informational for now; harden over time
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Job 2 — Unit & Integration Tests (CPU-only, no GPU required)
+  # ─────────────────────────────────────────────────────────────────────────────
+  test:
+    name: 🧪 Unit & Integration Tests
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    needs: lint
+
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11"]
+
+    steps:
+      - name: ⬇️  Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🐍 Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: "pip"
+
+      - name: 🖥️  Install system dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            libgl1-mesa-glx \
+            libglib2.0-0 \
+            libsm6 \
+            libxext6 \
+            ffmpeg \
+            sqlite3
+
+      - name: 📦 Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          # Install CPU-only torch to avoid massive GPU wheel download
+          pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+          pip install -r backend/requirements.txt
+
+      - name: 🧪 Run unit tests (excluding heavy e2e)
+        run: |
+          pytest backend/tests/ \
+            --ignore=backend/tests/test_e2e_pipeline.py \
+            -v \
+            --tb=short \
+            --junitxml=reports/unit-test-results-py${{ matrix.python-version }}.xml \
+            --cov=backend/app \
+            --cov-report=xml:reports/coverage-py${{ matrix.python-version }}.xml \
+            --cov-report=term-missing
+
+      - name: 📊 Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: unit-test-results-py${{ matrix.python-version }}
+          path: reports/
+          retention-days: 14
+
+      - name: 📊 Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        if: matrix.python-version == '3.11'
+        with:
+          file: reports/coverage-py${{ matrix.python-version }}.xml
+          flags: backend
+          name: backend-coverage
+          fail_ci_if_error: false
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Job 3 — Security Vulnerability Scan
+  # ─────────────────────────────────────────────────────────────────────────────
+  security:
+    name: 🔒 Security Scan
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    needs: lint
+
+    steps:
+      - name: ⬇️  Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🐍 Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: 📦 Install Bandit & pip-audit
+        run: pip install bandit pip-audit
+
+      - name: 🔒 Run Bandit security scan
+        run: |
+          bandit -r backend/app/ \
+            -f json \
+            -o reports/bandit-report.json \
+            --severity-level medium \
+            || true
+          bandit -r backend/app/ --severity-level medium
+
+      - name: 🔒 Run pip-audit for dependency vulnerabilities
+        run: |
+          pip-audit -r backend/requirements.txt \
+            --format json \
+            -o reports/pip-audit-report.json \
+            || true
+          pip-audit -r backend/requirements.txt
+
+      - name: 📊 Upload security reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: security-reports
+          path: reports/
+          retention-days: 30
