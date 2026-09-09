@@ -24,7 +24,7 @@ tifffile>=2024.2.12
 pillow>=10.2.0
 
 # Deep Learning & Edge Inference
-torch>=2.2.0
+torch>=2.14.0
 torchvision>=0.17.0
 
 # System & Monitoring
