@@ -99,14 +99,12 @@ function Person2AnalysisStudio({ selectedDataset, renderMode }) {
   };
 
   const handleResetCalibration = () => {
-    engine.scaleFactor = null;
-    engine.scaleConfidence = 0;
-    engine.scaleResidual = 0;
-    engine.referencePairs = [];
+    engine.resetCalibration();
     setScaleFactor(null);
     setScaleConfidence(0);
     setScaleResidual(0);
     setReferenceCount(0);
+    setPickedScalePoints([]);
   };
 
   // Point picking callbacks
@@ -274,9 +272,11 @@ function Person2AnalysisStudio({ selectedDataset, renderMode }) {
           <div>
             <div className="text-[10px] text-slate-400 uppercase">{isDemoMode ? 'DEMO HEIGHT' : 'HEIGHT'}</div>
             <div className="text-sm font-black text-brand-cyan mt-0.5">
-              {heightWidthDepthData.height.meters !== null ? `${heightWidthDepthData.height.meters} m` : `${heightWidthDepthData.height.model_units} units`}
+              {heightWidthDepthData.height.meters !== null ? `${heightWidthDepthData.height.meters} m` : `${heightWidthDepthData.height.model_units} model units`}
             </div>
-            <div className="text-[9px] text-slate-500">Axis: {axisOrientation}</div>
+            <div className="text-[9px] text-slate-500 font-medium">
+              {heightWidthDepthData.height.meters !== null ? `${heightWidthDepthData.height.model_units} units` : '≈ — m'}
+            </div>
           </div>
 
           <div>
@@ -284,23 +284,25 @@ function Person2AnalysisStudio({ selectedDataset, renderMode }) {
             <div className="text-sm font-black text-emerald-400 mt-0.5">
               {heightWidthDepthData.width.meters !== null ? `${heightWidthDepthData.width.meters}m × ${heightWidthDepthData.depth.meters}m` : `${heightWidthDepthData.width.model_units} × ${heightWidthDepthData.depth.model_units} units`}
             </div>
-            <div className="text-[9px] text-slate-500">{inspectionData.totalVertices.toLocaleString()} Vertices</div>
+            <div className="text-[9px] text-slate-500 font-medium">
+              {heightWidthDepthData.width.meters !== null ? `${heightWidthDepthData.width.model_units} × ${heightWidthDepthData.depth.model_units} units` : '≈ — m'}
+            </div>
           </div>
 
           <div>
             <div className="text-[10px] text-slate-400 uppercase">{isDemoMode ? 'DEMO SURFACE / VOL' : 'SURFACE AREA / VOL'}</div>
-            <div className="text-sm font-black text-amber-400 mt-0.5">
-              {areaVolumeData?.volume?.value_m3 !== null && areaVolumeData?.volume?.value_m3 !== undefined ? `${areaVolumeData.volume.value_m3} m³` : (areaVolumeData?.volume?.status === 'mesh_not_closed' ? 'Unavailable' : `${areaVolumeData?.boundingVolume?.model_units_cu ?? 0} units³`)}
+            <div className="text-xs font-black text-amber-400 mt-0.5 truncate" title={areaVolumeData?.volume?.status === 'valid' && areaVolumeData?.volume?.value_m3 !== null ? `${areaVolumeData.volume.value_m3} m³` : 'Volume unavailable — mesh is not closed/watertight'}>
+              {areaVolumeData?.volume?.status === 'valid' && areaVolumeData?.volume?.value_m3 !== null ? `${areaVolumeData.volume.value_m3} m³` : 'Volume unavailable — mesh is not closed/watertight'}
             </div>
-            <div className="text-[9px] text-slate-500">Volume: {areaVolumeData?.volume?.status ?? 'uncalibrated'}</div>
+            <div className="text-[9px] text-slate-500">Volume: {areaVolumeData?.volume?.status === 'valid' ? 'valid' : 'mesh_not_closed'}</div>
           </div>
 
           <div>
             <div className="text-[10px] text-slate-400 uppercase">Overall Confidence</div>
             <div className="text-sm font-black text-brand-cyan mt-0.5">
-              {confidenceMatrixData.overall}%
+              {confidenceMatrixData?.overall ?? 0}%
             </div>
-            <div className="text-[9px] text-emerald-400">Scale: {confidenceMatrixData.scale}%</div>
+            <div className="text-[9px] text-emerald-400">Scale: {confidenceMatrixData?.scale ?? 0}%</div>
           </div>
         </div>
       </div>

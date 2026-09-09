@@ -165,29 +165,39 @@ export default function ScaleCalibrationCard({
 
       {/* Scale Calibration Output Metrics */}
       {isCalibrated ? (
-        <div className="grid grid-cols-2 gap-2 text-xs font-mono bg-emerald-500/5 p-3 rounded-lg border border-emerald-500/20">
-          <div>
-            <div className="text-[10px] text-slate-400">Scale Factor:</div>
-            <div className="text-sm font-bold text-emerald-400">{scaleFactor} <span className="text-[10px] text-slate-400 font-normal">m / unit</span></div>
+        <div className="space-y-2 text-xs font-mono bg-emerald-500/5 p-3 rounded-lg border border-emerald-500/20">
+          <div className="flex items-center justify-between text-emerald-400 font-bold border-b border-emerald-500/20 pb-1.5">
+            <span>✓ CALIBRATED</span>
+            <span className="text-[10px] text-slate-400">Scale Conf: {(scaleConfidence * 100).toFixed(0)}%</span>
           </div>
-          <div>
-            <div className="text-[10px] text-slate-400">Scale Confidence:</div>
-            <div className="text-sm font-bold text-emerald-400">{(scaleConfidence * 100).toFixed(0)}%</div>
-          </div>
-          <div>
-            <div className="text-[10px] text-slate-400">Residual Error:</div>
-            <div className="text-slate-300 font-mono">{(scaleResidual * 100).toFixed(2)}%</div>
-          </div>
-          <div>
-            <div className="text-[10px] text-slate-400">Reference Source:</div>
-            <div className="text-slate-300 font-mono uppercase text-[10px] truncate">User Reference</div>
+
+          <div className="grid grid-cols-3 gap-2 text-[11px]">
+            <div>
+              <div className="text-[10px] text-slate-400 uppercase font-semibold">Scale</div>
+              <div className="font-bold text-emerald-400 mt-0.5">{typeof scaleFactor === 'number' ? scaleFactor.toFixed(3) : scaleFactor} <span className="text-[9px] text-slate-400">m / unit</span></div>
+            </div>
+
+            <div>
+              <div className="text-[10px] text-slate-400 uppercase font-semibold">Ref Distance</div>
+              <div className="font-bold text-slate-200 mt-0.5">
+                {pickedScalePoints.length === 2 && knownDistanceInput ? `${parseFloat(knownDistanceInput).toFixed(3)} m` : 'User Pair'}
+              </div>
+            </div>
+
+            <div>
+              <div className="text-[10px] text-slate-400 uppercase font-semibold">Model Dist</div>
+              <div className="font-bold text-slate-200 mt-0.5">
+                {pickedScalePoints.length === 2 ? `${Math.hypot(pickedScalePoints[1][0]-pickedScalePoints[0][0], pickedScalePoints[1][1]-pickedScalePoints[0][1], pickedScalePoints[1][2]-pickedScalePoints[0][2]).toFixed(3)} units` : 'Computed'}
+              </div>
+            </div>
           </div>
         </div>
       ) : (
         <div className="text-[11px] font-mono text-amber-400/90 bg-amber-500/10 p-2.5 rounded border border-amber-500/20 flex items-start gap-2">
           <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-amber-400" />
           <div>
-            <strong>Scale Not Calibrated:</strong> All measurements currently displayed in raw <em>model_units</em>. Calibrate above to enable meter outputs.
+            <div className="font-bold text-amber-400 uppercase text-[10px] tracking-wider mb-0.5">⚠ UNCALIBRATED</div>
+            Raw model units active. Pick 2 points above to establish real-world meters scale.
           </div>
         </div>
       )}

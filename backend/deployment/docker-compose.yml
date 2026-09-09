@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  terravision-backend:
+    build:
+      context: ..
+      dockerfile: backend/deployment/Dockerfile
+    image: terravision-edge:v1.0.0
+    container_name: terravision_edge_engine
+    restart: always
+    network_mode: "host"
+    environment:
+      - TV_AIR_GAP_MODE=True
+      - TV_ALLOW_ONLINE_FALLBACKS=False
+      - TV_TRT_FP16_ENABLED=True
+    volumes:
+      - ../backend/storage:/app/backend/storage
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu, utility, compute]

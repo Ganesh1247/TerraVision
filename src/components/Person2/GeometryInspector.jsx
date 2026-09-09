@@ -58,87 +58,189 @@ export default function GeometryInspector({
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
           {/* Height Card */}
           <div className="bg-dark-900 p-3 rounded-lg border border-slate-800 space-y-1">
-            <div className="text-[10px] uppercase font-bold text-brand-cyan flex items-center gap-1">
-              <MoveVertical className="w-3 h-3" /> Height
+            <div className="text-[10px] uppercase font-bold text-brand-cyan flex items-center justify-between">
+              <span className="flex items-center gap-1"><MoveVertical className="w-3 h-3" /> Height</span>
+              {!isCalibrated && <span className="text-[9px] text-amber-400 font-normal">⚠ Uncalibrated</span>}
             </div>
-            <div className="text-slate-300">
-              Model Units: <strong className="text-white">{height.model_units}</strong>
-            </div>
-            <div className="text-slate-300">
-              Meters:{' '}
-              {height.meters !== null ? (
-                <strong className="text-emerald-400">{height.meters} m</strong>
-              ) : (
-                <span className="text-amber-400 text-[10px]">null (uncalibrated)</span>
-              )}
-            </div>
-            {height.confidence && (
-              <div className="text-[9px] text-slate-400 pt-0.5">Conf: {(height.confidence * 100).toFixed(0)}%</div>
+            {isCalibrated ? (
+              <>
+                <div className="text-sm font-black text-emerald-400">
+                  {height.meters} m {height.uncertainty_m !== null && <span className="text-[10px] text-slate-400 font-normal">±{height.uncertainty_m}m</span>}
+                </div>
+                <div className="text-[11px] text-slate-400">
+                  {height.model_units} model units
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="text-sm font-black text-white">
+                  {height.model_units} model units
+                </div>
+                <div className="text-[11px] text-slate-500 font-medium">
+                  ≈ — m
+                </div>
+              </>
             )}
           </div>
 
           {/* Width Card */}
           <div className="bg-dark-900 p-3 rounded-lg border border-slate-800 space-y-1">
-            <div className="text-[10px] uppercase font-bold text-blue-400 flex items-center gap-1">
-              <MoveHorizontal className="w-3 h-3" /> Width
+            <div className="text-[10px] uppercase font-bold text-blue-400 flex items-center justify-between">
+              <span className="flex items-center gap-1"><MoveHorizontal className="w-3 h-3" /> Width</span>
+              {!isCalibrated && <span className="text-[9px] text-amber-400 font-normal">⚠ Uncalibrated</span>}
             </div>
-            <div className="text-slate-300">
-              Model Units: <strong className="text-white">{width.model_units}</strong>
-            </div>
-            <div className="text-slate-300">
-              Meters:{' '}
-              {width.meters !== null ? (
-                <strong className="text-emerald-400">{width.meters} m</strong>
-              ) : (
-                <span className="text-amber-400 text-[10px]">null (uncalibrated)</span>
-              )}
-            </div>
+            {isCalibrated ? (
+              <>
+                <div className="text-sm font-black text-emerald-400">
+                  {width.meters} m {width.uncertainty_m !== null && <span className="text-[10px] text-slate-400 font-normal">±{width.uncertainty_m}m</span>}
+                </div>
+                <div className="text-[11px] text-slate-400">
+                  {width.model_units} model units
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="text-sm font-black text-white">
+                  {width.model_units} model units
+                </div>
+                <div className="text-[11px] text-slate-500 font-medium">
+                  ≈ — m
+                </div>
+              </>
+            )}
           </div>
 
           {/* Depth Card */}
           <div className="bg-dark-900 p-3 rounded-lg border border-slate-800 space-y-1">
-            <div className="text-[10px] uppercase font-bold text-purple-400 flex items-center gap-1">
-              <Box className="w-3 h-3" /> Depth
+            <div className="text-[10px] uppercase font-bold text-purple-400 flex items-center justify-between">
+              <span className="flex items-center gap-1"><Box className="w-3 h-3" /> Depth</span>
+              {!isCalibrated && <span className="text-[9px] text-amber-400 font-normal">⚠ Uncalibrated</span>}
             </div>
-            <div className="text-slate-300">
-              Model Units: <strong className="text-white">{depth.model_units}</strong>
-            </div>
-            <div className="text-slate-300">
-              Meters:{' '}
-              {depth.meters !== null ? (
-                <strong className="text-emerald-400">{depth.meters} m</strong>
-              ) : (
-                <span className="text-amber-400 text-[10px]">null (uncalibrated)</span>
-              )}
-            </div>
+            {isCalibrated ? (
+              <>
+                <div className="text-sm font-black text-emerald-400">
+                  {depth.meters} m {depth.uncertainty_m !== null && <span className="text-[10px] text-slate-400 font-normal">±{depth.uncertainty_m}m</span>}
+                </div>
+                <div className="text-[11px] text-slate-400">
+                  {depth.model_units} model units
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="text-sm font-black text-white">
+                  {depth.model_units} model units
+                </div>
+                <div className="text-[11px] text-slate-500 font-medium">
+                  ≈ — m
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Surface Area & Bounding Volume */}
-      <div className="grid grid-cols-2 gap-2 text-xs font-mono bg-dark-900/60 p-3 rounded-lg border border-slate-800">
-        <div>
-          <div className="text-[10px] text-slate-400">Total Mesh Surface Area:</div>
-          <div className="text-slate-200 font-bold">
-            {areaVolume?.surfaceArea?.model_units_sq ?? 0} <span className="text-[10px] text-slate-400 font-normal">units²</span>
+      {/* Surface Area & Volume Display */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs font-mono bg-dark-900/60 p-3 rounded-lg border border-slate-800">
+        <div className="space-y-0.5">
+          <div className="text-[10px] text-slate-400 uppercase font-semibold">Surface Area</div>
+          {isCalibrated && areaVolume?.surfaceArea?.square_meters !== null ? (
+            <>
+              <div className="text-sm font-black text-emerald-400">
+                {areaVolume.surfaceArea.square_meters} m² {areaVolume.surfaceArea.uncertainty_m2 !== null && <span className="text-[10px] text-slate-400 font-normal">±{areaVolume.surfaceArea.uncertainty_m2}m²</span>}
+              </div>
+              <div className="text-[11px] text-slate-400">
+                {areaVolume?.surfaceArea?.model_units_sq ?? 0} model units²
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="text-sm font-black text-white">
+                {areaVolume?.surfaceArea?.model_units_sq ?? 0} model units²
+              </div>
+              <div className="text-[11px] text-slate-500">
+                ≈ — m²
+              </div>
+            </>
+          )}
+        </div>
+
+        <div className="space-y-0.5">
+          <div className="text-[10px] text-slate-400 uppercase font-semibold flex items-center justify-between">
+            <span>{areaVolume?.volume?.label || "Volume"}</span>
+            {areaVolume?.volume?.source && (
+              <span className="text-[9px] px-1.5 py-0.2 rounded bg-slate-800 text-slate-300 border border-slate-700">
+                Source: {areaVolume.volume.source}
+              </span>
+            )}
           </div>
-          {areaVolume?.surfaceArea?.square_meters !== null && areaVolume?.surfaceArea?.square_meters !== undefined && (
-            <div className="text-emerald-400 font-bold text-[11px]">
-              {areaVolume.surfaceArea.square_meters} m²
+
+          {areaVolume?.volume?.value_m3 !== null && areaVolume?.volume?.value_m3 !== undefined ? (
+            isCalibrated ? (
+              <>
+                <div className="text-sm font-black text-emerald-400">
+                  {areaVolume.volume.value_m3} m³ {areaVolume.volume.uncertainty_m3 !== null && <span className="text-[10px] text-slate-400 font-normal">±{areaVolume.volume.uncertainty_m3}m³</span>}
+                </div>
+                <div className="text-[11px] text-slate-400">
+                  {areaVolume.volume.model_units3} model units³
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="text-sm font-black text-white">
+                  {areaVolume.volume.model_units3} model units³
+                </div>
+                <div className="text-[11px] text-slate-500 font-medium">
+                  ≈ — m³
+                </div>
+              </>
+            )
+          ) : areaVolume?.volume?.status === 'estimated_voxel' ? (
+            isCalibrated ? (
+              <>
+                <div className="text-sm font-black text-amber-400">
+                  ESTIMATED {areaVolume.volume.value_m3} m³
+                </div>
+                <div className="text-[10px] text-slate-400">
+                  Method: {areaVolume.volume.method || 'voxel estimate'} ({areaVolume.volume.model_units3} units³)
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="text-sm font-black text-amber-300">
+                  {areaVolume.volume.model_units3} model units³ (Voxel Est.)
+                </div>
+                <div className="text-[10px] text-slate-500">
+                  ≈ — m³ (Method: voxel/occupancy estimate)
+                </div>
+              </>
+            )
+          ) : (
+            <div className="space-y-0.5">
+              <div className="text-xs font-bold text-amber-400">
+                Unavailable
+              </div>
+              <div className="text-[10px] text-slate-400 leading-tight">
+                Reason: Mesh is not closed/watertight and no reliable volume estimate is available.
+              </div>
             </div>
           )}
         </div>
+      </div>
+
+      {/* Bounding Box Volume (strictly separated from mesh physical volume) */}
+      <div className="text-[11px] font-mono text-slate-300 bg-dark-900/60 p-2.5 rounded-lg border border-slate-800 flex justify-between items-center">
         <div>
-          <div className="text-[10px] text-slate-400">Bounding Box Volume:</div>
-          <div className="text-slate-200 font-bold">
-            {areaVolume?.boundingVolume?.model_units_cu ?? 0} <span className="text-[10px] text-slate-400 font-normal">units³</span>
+          <div className="text-[10px] text-slate-400 uppercase font-semibold">BOUNDING BOX VOLUME (EXTENT ENVELOPE)</div>
+          <div className="text-slate-200">
+            Width × Height × Depth = <strong className="text-white">{areaVolume?.boundingVolume?.model_units_cu ?? 0} model units³</strong>
           </div>
-          {areaVolume?.boundingVolume?.cubic_meters !== null && areaVolume?.boundingVolume?.cubic_meters !== undefined && (
-            <div className="text-emerald-400 font-bold text-[11px]">
-              {areaVolume.boundingVolume.cubic_meters} m³
-            </div>
-          )}
         </div>
+        {areaVolume?.boundingVolume?.cubic_meters !== null && (
+          <div className="text-right">
+            <div className="text-emerald-400 font-bold text-xs">{areaVolume.boundingVolume.cubic_meters} m³</div>
+            <div className="text-[9px] text-slate-500">(Extent only)</div>
+          </div>
+        )}
       </div>
 
       {/* Bounding Box Min/Max Coordinates */}

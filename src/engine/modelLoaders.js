@@ -1,8 +1,13 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
 import { PLYLoader } from 'three/examples/jsm/loaders/PLYLoader.js';
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader.js';
+
+// Configured local offline DRACOLoader instance
+const dracoLoader = new DRACOLoader();
+dracoLoader.setDecoderPath('/draco/gltf/');
 
 /**
  * Load a 3D model (.glb, .gltf, .obj, .ply, .stl) or 2D image (.png, .jpg, .jpeg, .webp, .bmp)
@@ -21,6 +26,7 @@ export async function loadModelFromFile(file) {
     // 1. 3D GLTF / GLB Models
     if (fileName.endsWith('.glb') || fileName.endsWith('.gltf')) {
       const loader = new GLTFLoader();
+      loader.setDRACOLoader(dracoLoader);
       loader.load(
         objectUrl,
         (gltf) => {

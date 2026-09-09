@@ -127,15 +127,22 @@ export default function MeasurementPanel({
                     {m.label}
                   </div>
                   <div className="text-slate-400 text-[11px] flex items-center gap-3">
-                    <span>
-                      Model Units: <strong className="text-slate-200">{m.distance_model_units}</strong>
-                    </span>
                     {m.distance_m !== null ? (
-                      <span>
-                        Meters: <strong className="text-emerald-400">{m.distance_m} m</strong>
-                      </span>
+                      <>
+                        <span className="text-emerald-400 font-bold">
+                          {m.distance_m} m {m.uncertainty_m !== null && <span className="text-[10px] text-slate-400 font-normal">±{m.uncertainty_m}m</span>}
+                        </span>
+                        <span className="text-[10px] text-slate-400">
+                          ({m.distance_model_units} model units)
+                        </span>
+                      </>
                     ) : (
-                      <span className="text-amber-400/80">Uncalibrated</span>
+                      <>
+                        <span className="text-slate-200 font-bold">
+                          {m.distance_model_units} model units
+                        </span>
+                        <span className="text-amber-400/80 text-[10px]">≈ — m</span>
+                      </>
                     )}
                   </div>
                 </div>
