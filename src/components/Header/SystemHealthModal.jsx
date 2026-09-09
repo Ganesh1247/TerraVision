@@ -76,39 +76,38 @@ export default function SystemHealthModal({ health, isOpen, onClose }) {
           {/* GPU */}
           <HealthCard
             icon={Zap} title="Neural GPU Compute" accentColor="cyan"
-            badge={`${health.gpu.loadPct.toFixed(0)}% Load`}
-            barValue={health.gpu.vramUsedGb} barMax={health.gpu.vramTotalGb}
+            badge={`${(health.gpu?.loadPct ?? 0).toFixed(0)}% Load`}
+            barValue={health.gpu?.vramUsedGb ?? 0} barMax={health.gpu?.vramTotalGb ?? 8}
           >
-            <MetricRow label="Device" value={health.gpu.name} />
-            <MetricRow label="VRAM" value={`${health.gpu.vramUsedGb.toFixed(1)} / ${health.gpu.vramTotalGb} GB`} accent="cyan" />
-            <MetricRow label="Temperature" value={`${health.gpu.tempC.toFixed(0)}°C`}
-              accent={health.gpu.tempC > 80 ? 'rose' : health.gpu.tempC > 65 ? 'amber' : 'emerald'} />
-            <MetricRow label="CUDA / TensorRT" value={`${health.gpu.cudaVersion} / ${health.gpu.tensorRtStatus}`} accent="emerald" />
+            <MetricRow label="Device" value={health.gpu?.name ?? 'N/A'} />
+            <MetricRow label="VRAM" value={`${(health.gpu?.vramUsedGb ?? 0).toFixed(1)} / ${health.gpu?.vramTotalGb ?? 8} GB`} accent="cyan" />
+            <MetricRow label="Temperature" value={`${(health.gpu?.tempC ?? 0).toFixed(0)}°C`}
+              accent={(health.gpu?.tempC ?? 0) > 80 ? 'rose' : (health.gpu?.tempC ?? 0) > 65 ? 'amber' : 'emerald'} />
+            <MetricRow label="CUDA / TensorRT" value={`${health.gpu?.cudaVersion ?? 'N/A'} / ${health.gpu?.tensorRtStatus ?? 'N/A'}`} accent="emerald" />
           </HealthCard>
 
           {/* Storage */}
           <HealthCard
             icon={HardDrive} title="NVMe Scratch Storage" accentColor="violet"
-            badge={`I/O ${health.system.nvmeReadWriteMb}`}
-            barValue={health.system.storageUsedGb} barMax={health.system.storageTotalGb}
+            badge={`I/O ${health.system?.nvmeReadWriteMb ?? 'N/A'}`}
+            barValue={null} barMax={null}
           >
-            <MetricRow label="Used / Total"
-              value={`${health.system.storageUsedGb.toFixed(1)} / ${health.system.storageTotalGb} GB`}
-              accent="violet" />
-            <MetricRow label="Read / Write" value={health.system.nvmeReadWriteMb} />
+            <MetricRow label="Free Space" value={`${(health.system?.nvmeFreeGb ?? 0).toFixed(1)} GB free`} accent="violet" />
+            <MetricRow label="Read / Write" value={health.system?.nvmeReadWriteMb ?? 'N/A'} />
             <MetricRow label="File System" value="ext4 (WAL-mode SQLite)" />
           </HealthCard>
 
           {/* CPU */}
           <HealthCard
             icon={Cpu} title="ARM CPU + RAM" accentColor="amber"
-            barValue={health.cpu.loadPct} barMax={100}
+            barValue={health.system?.cpuUsagePct ?? 0} barMax={100}
           >
-            <MetricRow label="Load" value={`${health.cpu.loadPct.toFixed(0)}%`}
-              accent={health.cpu.loadPct > 85 ? 'rose' : 'amber'} />
-            <MetricRow label="RAM" value={`${health.cpu.ramUsedGb.toFixed(1)} / ${health.cpu.ramTotalGb} GB`} />
-            <MetricRow label="Threads" value={health.cpu.threads} />
+            <MetricRow label="CPU Load" value={`${(health.system?.cpuUsagePct ?? 0).toFixed(0)}%`}
+              accent={(health.system?.cpuUsagePct ?? 0) > 85 ? 'rose' : 'amber'} />
+            <MetricRow label="RAM" value={`${(health.system?.ramUsedGb ?? 0).toFixed(1)} / ${health.system?.ramTotalGb ?? 32} GB`} />
+            <MetricRow label="Threads" value={health.system?.cpuUsagePct != null ? 'Active' : 'N/A'} />
           </HealthCard>
+
 
           {/* Air-gap / mission */}
           <HealthCard icon={ShieldCheck} title="Air-Gap Verification" accentColor="emerald" badge="SECURE">

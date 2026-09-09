@@ -15,7 +15,7 @@ import { useSystemHealth } from './hooks/useSystemHealth';
 import { MOCK_DATASETS } from './data/mockDatasets';
 import {
   Terminal, Activity, Cpu, HardDrive, Thermometer,
-  Zap, BarChart3, Globe, CheckCircle2, Shield, Sparkles
+  BarChart3, Globe, CheckCircle2, Shield, Sparkles
 } from 'lucide-react';
 
 /* ── Small stat pill shown in the info ribbon ─────────────────── */
@@ -103,14 +103,19 @@ export default function App() {
     addLog('SESSION_LOAD', `Loaded historic session ${job.id} into 3D inspection viewport.`, 'success');
   };
 
-  /* ── Derive ribbon stats from systemHealth ─────────────────── */
+  /* ── Derive ribbon stats from systemHealth (safe accessors) ── */
+  const gpuLoad   = systemHealth?.gpu?.loadPct   ?? 0;
+  const gpuTemp   = systemHealth?.gpu?.tempC     ?? 0;
+  const gpuVram   = systemHealth?.gpu?.vramUsedGb ?? 0;
+  const cpuLoad   = systemHealth?.system?.cpuUsagePct ?? 0;
+
   const ribbonStats = [
-    { icon: Cpu,         label: 'GPU Load',   value: `${systemHealth.gpu.loadPct.toFixed(0)}%`, color: 'cyan' },
-    { icon: Thermometer, label: 'GPU Temp',   value: `${systemHealth.gpu.tempC.toFixed(0)}°C`,  color: systemHealth.gpu.tempC > 75 ? 'rose' : 'emerald' },
-    { icon: HardDrive,   label: 'VRAM',       value: `${systemHealth.gpu.vramUsedGb.toFixed(1)}GB`, color: 'violet' },
-    { icon: Activity,    label: 'CPU',        value: `${systemHealth.cpu.loadPct.toFixed(0)}%`, color: 'amber' },
-    { icon: Globe,       label: 'Network',    value: 'AIR-GAP',  color: 'emerald' },
-    { icon: Shield,      label: 'GPS',        value: 'BLOCKED',  color: 'emerald' },
+    { icon: Cpu,         label: 'GPU Load',  value: `${gpuLoad.toFixed(0)}%`,  color: 'cyan'    },
+    { icon: Thermometer, label: 'GPU Temp',  value: `${gpuTemp.toFixed(0)}°C`, color: gpuTemp > 75 ? 'rose' : 'emerald' },
+    { icon: HardDrive,   label: 'VRAM',      value: `${gpuVram.toFixed(1)} GB`, color: 'violet'  },
+    { icon: Activity,    label: 'CPU',       value: `${cpuLoad.toFixed(0)}%`,  color: 'amber'   },
+    { icon: Globe,       label: 'Network',   value: 'AIR-GAP',                 color: 'emerald' },
+    { icon: Shield,      label: 'GPS',       value: 'BLOCKED',                 color: 'emerald' },
   ];
 
   return (
