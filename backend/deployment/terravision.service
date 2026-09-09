@@ -1,0 +1,25 @@
+[Unit]
+Description=Terra Vision Edge 3D Reconstruction Service (SIH26158)
+After=network.target nvargus-daemon.service
+Wants=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/terravision
+ExecStart=/usr/bin/python3 /opt/terravision/backend/run_backend.py
+Restart=always
+RestartSec=3s
+KillMode=process
+Environment=PYTHONUNBUFFERED=1
+Environment=TV_AIR_GAP_MODE=True
+Environment=TV_REQUIRE_AUTH=False
+
+# Sandboxing & Resource Limits
+LimitNOFILE=65536
+LimitNPROC=4096
+CPUAccounting=true
+MemoryAccounting=true
+
+[Install]
+WantedBy=multi-user.target

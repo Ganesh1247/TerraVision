@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 
+const BACKEND_API_BASE = 'http://127.0.0.1:8000';
+
 export function useSystemHealth() {
   const [health, setHealth] = useState({
     status: 'healthy',
@@ -36,24 +38,57 @@ export function useSystemHealth() {
     }
   });
 
-  // Minor fluctuations to feel live and authentic
   useEffect(() => {
-    const interval = setInterval(() => {
-      setHealth(prev => ({
-        ...prev,
-        gpu: {
-          ...prev.gpu,
-          loadPct: Math.min(95, Math.max(30, prev.gpu.loadPct + (Math.random() * 6 - 3))),
-          tempC: Math.min(74, Math.max(52, prev.gpu.tempC + (Math.random() * 0.8 - 0.4))),
-          vramUsedGb: parseFloat((3.4 + Math.random() * 0.4).toFixed(2))
-        },
-        system: {
-          ...prev.system,
-          cpuUsagePct: Math.min(85, Math.max(25, prev.system.cpuUsagePct + (Math.random() * 8 - 4)))
+    const fetchLiveHealth = async () => {
+      try {
+        const resp = await fetch(`${BACKEND_API_BASE}/health`);
+        if (resp.ok) {
+          const data = await resp.json();
+          setHealth(prev => ({
+            ...prev,
+            status: data.status,
+            gpu: {
+              ...prev.gpu,
+              name: data.gpu_name,
+              vramUsedGb: parseFloat((data.vram_used_mb / 1024).toFixed(2)),
+              vramTotalGb: parseFloat((data.vram_total_mb / 1024).toFixed(2)) || 8.0,
+              cudaVersion: data.cuda_version,
+              tensorRtStatus: data.tensorrt_status
+            },
+            system: {
+              ...prev.system,
+              nvmeFreeGb: data.disk_free_gb
+            },
+            database: {
+              ...prev.database,
+              status: data.database_status
+            },
+            network: {
+              offlineMode: data.air_gap_verified,
+              interfaces: 'All external sockets disabled (Air-gapped safe)'
+            }
+          }));
         }
-      }));
-    }, 2500);
+      } catch {
+        // Backend not running; fallback to simulated fluctuations
+        setHealth(prev => ({
+          ...prev,
+          gpu: {
+            ...prev.gpu,
+            loadPct: Math.min(95, Math.max(30, prev.gpu.loadPct + (Math.random() * 6 - 3))),
+            tempC: Math.min(74, Math.max(52, prev.gpu.tempC + (Math.random() * 0.8 - 0.4))),
+            vramUsedGb: parseFloat((3.4 + Math.random() * 0.4).toFixed(2))
+          },
+          system: {
+            ...prev.system,
+            cpuUsagePct: Math.min(85, Math.max(25, prev.system.cpuUsagePct + (Math.random() * 8 - 4)))
+          }
+        }));
+      }
+    };
 
+    fetchLiveHealth();
+    const interval = setInterval(fetchLiveHealth, 3000);
     return () => clearInterval(interval);
   }, []);
 

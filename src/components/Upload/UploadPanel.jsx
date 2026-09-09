@@ -65,6 +65,7 @@ export default function UploadPanel({
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       setCustomImu({
+        rawFile: file,
         name: file.name,
         size: `${(file.size / (1024 * 1024)).toFixed(1)} MB`
       });
@@ -82,6 +83,7 @@ export default function UploadPanel({
 
     setValidationError(null);
     setCustomFile({
+      rawFile: file,
       name: file.name,
       size: `${(file.size / (1024 * 1024)).toFixed(1)} MB`,
       duration: '02m 30s',
@@ -91,7 +93,7 @@ export default function UploadPanel({
 
   const handleStart = () => {
     if (customFile) {
-      onStartReconstruction({
+      const customDs = {
         id: `custom-${Date.now()}`,
         name: `Custom Upload: ${customFile.name}`,
         badge: customImu ? 'User Drone Video + IMU' : 'User Drone Video (Visual-Only)',
@@ -116,9 +118,13 @@ export default function UploadPanel({
           loopClosureNeeded: true
         },
         defaultHotspots: 'substation'
+      };
+      onStartReconstruction(customDs, {
+        rawVideoFile: customFile.rawFile,
+        rawImuFile: customImu?.rawFile
       });
     } else {
-      onStartReconstruction();
+      onStartReconstruction(selectedDataset);
     }
   };
 
