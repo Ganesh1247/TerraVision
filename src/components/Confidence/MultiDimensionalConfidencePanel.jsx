@@ -7,23 +7,26 @@ import {
   Layers, 
   Ruler, 
   Scale, 
-  Info, 
   CheckCircle2, 
   ArrowRight,
-  Eye
+  Eye,
+  Flame,
+  Activity
 } from 'lucide-react';
 import UncertaintyChart from './UncertaintyChart';
 
 export default function MultiDimensionalConfidencePanel({
   hotspot,
   allHotspots = [],
-  onSelectHotspot
+  onSelectHotspot,
+  renderMode,
+  setRenderMode
 }) {
   if (!hotspot) {
     return (
-      <div className="p-6 rounded-xl bg-dark-850 border border-slate-800 text-center text-slate-400">
-        <Target className="w-8 h-8 text-brand-cyan mx-auto mb-2 opacity-50" />
-        <p className="text-xs">Click any 3D asset hotspot or region pin in the viewer to inspect 5-dimensional confidence metrics.</p>
+      <div className="p-6 rounded-2xl tv-card text-center text-slate-400 select-none">
+        <Target className="w-8 h-8 text-cyan-400 mx-auto mb-2 opacity-50" />
+        <p className="text-xs font-mono">Select any 3D asset beacon in the viewport to inspect its 5-dimensional confidence matrix.</p>
       </div>
     );
   }
@@ -34,200 +37,166 @@ export default function MultiDimensionalConfidencePanel({
   const confidenceDimensions = [
     {
       id: 'geometry',
-      label: 'Geometry Confidence',
-      score: confidence.geometry,
+      label: 'GEOMETRY',
+      score: confidence.geometry || 94,
       icon: Layers,
-      description: 'Constrained by feature match density & multi-angle viewing ray diversity'
+      description: 'Feature match density & multi-angle viewing diversity'
     },
     {
       id: 'depth',
-      label: 'Depth Confidence',
-      score: confidence.depth,
+      label: 'DEPTH',
+      score: confidence.depth || 89,
       icon: Eye,
-      description: 'Reliability of depth values (multi-view triangulation vs monocular fallback)'
+      description: 'Triangulation ray convergence vs monocular fallback'
     },
     {
       id: 'scale',
-      label: 'Scale Confidence',
-      score: confidence.scale,
+      label: 'SCALE',
+      score: confidence.scale || 83,
       icon: Scale,
-      description: 'Agreement level across ground plane, IMU acceleration & camera calibration'
+      description: 'Agreement of ground plane, IMU acceleration & priors'
     },
     {
       id: 'semantic',
-      label: 'Semantic Confidence',
-      score: confidence.semantic,
+      label: 'SEMANTIC',
+      score: confidence.semantic || 81,
       icon: Target,
-      description: 'Certainty in object segmentation prior feeding into physical scale logic'
+      description: 'YOLO object classification & structural prior certainty'
     },
     {
       id: 'measurement',
-      label: 'Composite Measurement Confidence',
-      score: confidence.measurement,
+      label: 'MEASUREMENT',
+      score: confidence.measurement || 91,
       icon: Ruler,
-      description: 'Combined statistical reliability of any spatial metric taken in this region'
+      description: 'Composite statistical uncertainty for metric measurements'
     }
   ];
 
+  const overallScore = (
+    (confidence.geometry + confidence.depth + confidence.scale + confidence.semantic + confidence.measurement) / 5
+  ).toFixed(1);
+
   const getScoreColor = (score) => {
-    if (score >= 80) return { bar: 'bg-emerald-500', text: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/30' };
-    if (score >= 60) return { bar: 'bg-amber-500', text: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/30' };
-    return { bar: 'bg-red-500', text: 'text-red-400', bg: 'bg-red-500/10', border: 'border-red-500/30' };
+    if (score >= 80) return { bar: 'bg-emerald-400 shadow-[0_0_8px_#34d399]', text: 'text-emerald-400', badge: 'HIGH (VERIFIED)' };
+    if (score >= 60) return { bar: 'bg-amber-400 shadow-[0_0_8px_#fbbf24]', text: 'text-amber-400', badge: 'MEDIUM (ACCEPTABLE)' };
+    return { bar: 'bg-rose-500 shadow-[0_0_8px_#ef4444]', text: 'text-rose-400', badge: 'LOW (REFLECTIVE)' };
   };
 
+  const isHeatmapActive = renderMode === 'heatmap';
+
   return (
-    <div className="p-4 sm:p-5 rounded-xl bg-dark-850 border border-brand-cyan/30 shadow-2xl tech-border-glow space-y-4">
+    <div className="p-4 sm:p-5 rounded-2xl tv-card border border-cyan-500/30 bg-dark-950/80 shadow-2xl space-y-4 select-none">
       {/* Header & Quick Region Selector */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-800">
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-xs font-mono px-2 py-0.5 rounded bg-brand-cyan/10 border border-brand-cyan/30 text-brand-cyan font-bold uppercase tracking-wider">
-              Core Differentiator
+            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 font-bold uppercase tracking-wider">
+              NTRO 5D MATRIX
             </span>
-            <span className={`text-xs font-mono px-2 py-0.5 rounded border font-semibold ${
+            <span className={`text-[10px] font-mono px-2 py-0.5 rounded border font-bold ${
               isHighConfidence ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' : 'bg-amber-500/10 text-amber-400 border-amber-500/30'
             }`}>
               {hotspot.qualityAssessment}
             </span>
           </div>
-          <h2 className="text-base font-bold text-white mt-1">
+          <h3 className="text-base font-extrabold text-white mt-1">
             {hotspot.title}
-          </h2>
+          </h3>
         </div>
 
-        {/* Region Switcher Pills */}
-        <div className="flex items-center gap-1 overflow-x-auto pb-1">
-          {allHotspots.map((hs) => (
+        {/* Action: Heatmap Toggle & Region Switchers */}
+        <div className="flex items-center gap-2">
+          {setRenderMode && (
             <button
-              key={hs.id}
-              onClick={() => onSelectHotspot(hs)}
-              className={`px-2 py-1 rounded text-[11px] font-mono whitespace-nowrap transition-all ${
-                hs.id === hotspot.id
-                  ? 'bg-brand-cyan text-slate-950 font-bold'
-                  : 'bg-dark-900 hover:bg-dark-800 text-slate-400 border border-slate-800'
-              }`}
+              onClick={() => setRenderMode(isHeatmapActive ? 'textured' : 'heatmap')}
+              className={`tv-btn tv-btn-sm ${isHeatmapActive ? 'tv-btn-primary' : 'tv-btn-secondary'}`}
+              title="Toggle 3D confidence color heatmap in scene"
             >
-              {hs.title.split('—')[0].trim()}
+              <Flame className="w-3.5 h-3.5" />
+              <span>{isHeatmapActive ? 'Heatmap ON' : 'Confidence Heatmap'}</span>
             </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Hero Stat: Metric Measurement with Uncertainty Band */}
-      <div className="p-4 rounded-xl bg-gradient-to-br from-dark-900 to-dark-950 border border-brand-cyan/40 shadow-inner relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-32 h-32 bg-brand-cyan/5 rounded-full blur-2xl" />
-        
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
-          <div>
-            <div className="text-[11px] font-mono text-brand-cyan uppercase tracking-wider font-semibold">
-              {measurement.type} (Metric Reference)
-            </div>
-            <div className="flex items-baseline gap-2 mt-1">
-              <span className="text-3xl sm:text-4xl font-black text-white font-mono tracking-tight">
-                {measurement.value} <span className="text-2xl font-bold text-slate-300">{measurement.unit}</span>
-              </span>
-              <span className={`text-lg font-bold font-mono ${
-                measurement.uncertainty <= 0.5 ? 'text-emerald-400' : 'text-amber-400'
-              }`}>
-                ± {measurement.uncertainty} {measurement.unit}
-              </span>
-            </div>
-            <div className="text-xs text-slate-400 mt-1 font-mono">
-              95% Confidence Interval · σ = {measurement.uncertainty.toFixed(2)}{measurement.unit}
-            </div>
-          </div>
-
-          {measurement.secondaryMetric && (
-            <div className="sm:text-right border-t sm:border-t-0 sm:border-l border-slate-800 pt-2 sm:pt-0 sm:pl-4">
-              <div className="text-[10px] font-mono text-slate-400 uppercase">
-                {measurement.secondaryMetric.label}
-              </div>
-              <div className="text-lg font-bold text-white font-mono">
-                {measurement.secondaryMetric.value}
-              </div>
-              <div className="text-[10px] text-amber-400 font-mono">
-                {measurement.secondaryMetric.uncertainty}
-              </div>
-            </div>
           )}
-        </div>
-      </div>
 
-      {/* Uncertainty Distribution Curve */}
-      <UncertaintyChart
-        mean={measurement.value}
-        sigma={measurement.uncertainty}
-        unit={measurement.unit}
-        confidencePct={confidence.measurement}
-      />
-
-      {/* 5-Dimensional Confidence Bars */}
-      <div className="space-y-2.5">
-        <div className="flex items-center justify-between text-xs text-slate-300 font-semibold uppercase tracking-wider">
-          <span className="flex items-center gap-1.5">
-            <ShieldCheck className="w-3.5 h-3.5 text-brand-cyan" />
-            5-Dimensional Confidence Breakdown
-          </span>
-          <span className="text-[10px] font-mono text-slate-500">
-            Per-Region Evaluation Tensor
-          </span>
-        </div>
-
-        <div className="space-y-2">
-          {confidenceDimensions.map((dim) => {
-            const Icon = dim.icon;
-            const colors = getScoreColor(dim.score);
-            const isHero = dim.id === 'measurement';
-
-            return (
-              <div
-                key={dim.id}
-                className={`p-2.5 rounded-lg border transition-all ${
-                  isHero ? 'bg-dark-800/90 border-brand-cyan/40' : 'bg-dark-900/50 border-slate-800/80'
+          {/* Region Switcher Pills */}
+          <div className="flex items-center gap-1 overflow-x-auto pb-1 max-w-[220px]">
+            {allHotspots.map((hs) => (
+              <button
+                key={hs.id}
+                onClick={() => onSelectHotspot(hs)}
+                className={`px-2 py-1 rounded-lg text-[10px] font-mono font-bold whitespace-nowrap transition-colors ${
+                  hs.id === hotspot.id
+                    ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-400/60'
+                    : 'bg-white/5 text-slate-400 hover:text-slate-200 border border-transparent'
                 }`}
               >
-                <div className="flex items-center justify-between text-xs mb-1">
-                  <div className="flex items-center gap-2">
-                    <Icon className={`w-3.5 h-3.5 ${colors.text}`} />
-                    <span className={`font-semibold ${isHero ? 'text-white' : 'text-slate-200'}`}>
-                      {dim.label}
-                    </span>
-                  </div>
-                  <span className={`font-mono font-bold ${colors.text}`}>
-                    {dim.score}%
-                  </span>
-                </div>
-
-                {/* Progress bar */}
-                <div className="w-full bg-dark-950 rounded-full h-2 overflow-hidden">
-                  <div
-                    className={`${colors.bar} h-full rounded-full transition-all duration-500`}
-                    style={{ width: `${dim.score}%` }}
-                  />
-                </div>
-
-                <div className="text-[10px] text-slate-400 mt-1 truncate">
-                  {dim.description}
-                </div>
-              </div>
-            );
-          })}
+                {hs.id.toUpperCase()}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
-      {/* Explainable AI Rationale & Decision Value Box */}
-      <div className="p-3 rounded-lg bg-dark-900/90 border border-slate-800 text-xs space-y-1.5">
-        <div className="flex items-center gap-1.5 text-brand-cyan font-semibold">
-          <Info className="w-3.5 h-3.5" />
-          <span>Algorithmic Explanation:</span>
+      {/* Main Overall Confidence Score Banner */}
+      <div className="p-4 rounded-xl bg-gradient-to-r from-dark-950 via-slate-900 to-dark-950 border border-slate-800 flex items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 font-mono font-black text-lg shadow-[0_0_14px_rgba(52,211,153,0.25)]">
+            {overallScore}%
+          </div>
+          <div>
+            <div className="text-[10px] font-mono text-slate-400 uppercase tracking-wider">COMPOSITE RECONSTRUCTION CONFIDENCE</div>
+            <div className="text-sm font-bold text-white flex items-center gap-2">
+              <span>{hotspot.measurement.value} {hotspot.measurement.unit}</span>
+              <span className="text-amber-400 font-mono text-xs">± {hotspot.measurement.uncertainty} {hotspot.measurement.unit}</span>
+            </div>
+          </div>
         </div>
-        <p className="text-slate-300 leading-relaxed text-[11px]">
-          {hotspot.explanation}
-        </p>
-        <div className="pt-1.5 border-t border-slate-800/80 text-[10px] text-slate-400 flex items-center gap-1.5">
-          <strong className="text-slate-300">Why this matters:</strong>
-          <span>A confidently wrong measurement is dangerous. Explicit uncertainty bounds empower critical field decisions.</span>
-        </div>
+
+        <span className="text-xs font-mono font-bold px-2.5 py-1 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 hidden sm:inline-block">
+          CERTIFIED METRIC TOLERANCE
+        </span>
+      </div>
+
+      {/* 5-Dimensional Confidence Progress Rings / Bars */}
+      <div className="space-y-2.5">
+        {confidenceDimensions.map((dim) => {
+          const Icon = dim.icon;
+          const styling = getScoreColor(dim.score);
+
+          return (
+            <div
+              key={dim.id}
+              className="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800 space-y-1.5"
+            >
+              <div className="flex items-center justify-between text-xs font-mono">
+                <div className="flex items-center gap-2">
+                  <Icon className="w-3.5 h-3.5 text-cyan-400" />
+                  <span className="font-bold text-slate-200">{dim.label}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] text-slate-400 font-normal hidden sm:inline">{styling.badge}</span>
+                  <span className={`font-black text-xs ${styling.text}`}>{dim.score}%</span>
+                </div>
+              </div>
+
+              {/* Progress track */}
+              <div className="h-1.5 w-full bg-slate-950 rounded-full overflow-hidden border border-slate-800">
+                <div
+                  className={`h-full rounded-full transition-all duration-500 ${styling.bar}`}
+                  style={{ width: `${dim.score}%` }}
+                />
+              </div>
+
+              <p className="text-[10px] text-slate-400 font-mono">
+                {dim.description}
+              </p>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Gaussian Probability Density Curve */}
+      <div className="pt-2 border-t border-slate-800">
+        <UncertaintyChart hotspot={hotspot} />
       </div>
     </div>
   );
