@@ -124,6 +124,7 @@ export default function SystemHealthModal({ health, isOpen, onClose }) {
             <MetricRow label="Threads" value={threads} />
           </HealthCard>
 
+
           {/* Air-gap / mission */}
           <HealthCard icon={ShieldCheck} title="Air-Gap Verification" accentColor="emerald" badge="SECURE">
             <MetricRow label="Network Interfaces" value="All Blocked" accent="emerald" />
