@@ -1,7 +1,9 @@
 import pytest
-from httpx import AsyncClient, ASGITransport
-from backend.app.main import app
+from httpx import ASGITransport, AsyncClient
+
 from backend.app.core.database import init_db
+from backend.app.main import app
+
 
 @pytest.mark.asyncio
 async def test_health_endpoint():
@@ -15,6 +17,7 @@ async def test_health_endpoint():
         assert data["gps_signals_blocked"] is True
         assert "gpu_available" in data
 
+
 @pytest.mark.asyncio
 async def test_metrics_endpoint():
     transport = ASGITransport(app=app)
@@ -25,15 +28,13 @@ async def test_metrics_endpoint():
         assert "uptime_seconds" in data
         assert "system_resources" in data
 
+
 @pytest.mark.asyncio
 async def test_job_upload_and_status():
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
         # Submit job with form data
-        resp = await client.post(
-            "/api/v1/jobs/upload",
-            data={"dataset_name": "Automated Test Flight"}
-        )
+        resp = await client.post("/api/v1/jobs/upload", data={"dataset_name": "Automated Test Flight"})
         assert resp.status_code == 201
         job_data = resp.json()
         job_id = job_data["id"]

@@ -1,0 +1,47 @@
+line-length = 120
+target-version = "py311"
+extend-exclude = ["storage", "offline_weights"]
+
+[lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "UP",  # pyupgrade
+]
+ignore = [
+    "E501",    # line too long
+    "B008",    # FastAPI Depends/File/Security in argument defaults
+    "BLE001",  # blind exception
+    "S110",    # try-except-pass
+    "ASYNC230",# blocking file calls in async
+    "DTZ003",  # datetime.utcnow()
+    "DTZ006",  # datetime.fromtimestamp()
+    "EXE001",  # shebang in non-executable file
+    "RUF012",  # mutable default for class attribute
+    "RUF013",  # implicit Optional
+    "RUF059",  # unpacked variable never used
+    "PLR0402", # import alias
+    "TRY201",  # raise without exception name
+    "PIE790",  # unnecessary pass
+]
+
+[lint.isort]
+known-first-party = ["backend"]
+
+[lint.flake8-bugbear]
+extend-immutable-calls = [
+    "fastapi.Depends",
+    "fastapi.params.Depends",
+    "fastapi.File",
+    "fastapi.params.File",
+    "fastapi.Security",
+    "fastapi.params.Security",
+    "fastapi.Query",
+    "fastapi.params.Query",
+    "fastapi.Form",
+    "fastapi.params.Form",
+    "fastapi.Header",
+    "fastapi.params.Header",
+]

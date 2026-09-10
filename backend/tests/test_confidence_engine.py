@@ -1,6 +1,8 @@
 import pytest
-from backend.app.pipeline.stages.s7_scale_validation import ScaleValidationStage
+
 from backend.app.pipeline.stages.base import StageContext
+from backend.app.pipeline.stages.s7_scale_validation import ScaleValidationStage
+
 
 @pytest.mark.asyncio
 async def test_5d_confidence_matrix_generation():
@@ -13,8 +15,8 @@ async def test_5d_confidence_matrix_generation():
             "scale_confidence": 94.2,
             "uncertainty_m": 0.012,
             "mono_depth_fallback_used": False,
-            "has_imu": True
-        }
+            "has_imu": True,
+        },
     )
 
     stage = ScaleValidationStage()

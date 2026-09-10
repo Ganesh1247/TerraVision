@@ -1,8 +1,9 @@
 from fastapi import APIRouter
-from .jobs import router as jobs_router
+
 from .confidence import router as confidence_router
-from .history import router as history_router
 from .health import router as health_router
+from .history import router as history_router
+from .jobs import router as jobs_router
 from .metrics import router as metrics_router
 
 api_router = APIRouter()

@@ -1,11 +1,11 @@
 import hashlib
 from pathlib import Path
-from typing import Union
 
-def compute_sha256(file_path_or_bytes: Union[str, Path, bytes]) -> str:
+
+def compute_sha256(file_path_or_bytes: str | Path | bytes) -> str:
     """Computes SHA-256 hash for raw file path or bytes buffer."""
     sha = hashlib.sha256()
-    
+
     if isinstance(file_path_or_bytes, (str, Path)):
         p = Path(file_path_or_bytes)
         if not p.exists() or not p.is_file():
@@ -17,10 +17,11 @@ def compute_sha256(file_path_or_bytes: Union[str, Path, bytes]) -> str:
         sha.update(file_path_or_bytes)
     else:
         raise TypeError("Input must be a file path or bytes buffer.")
-        
+
     return sha.hexdigest()
 
-def verify_file_checksum(file_path: Union[str, Path], expected_hash: str) -> bool:
+
+def verify_file_checksum(file_path: str | Path, expected_hash: str) -> bool:
     """Validates if file matches the expected SHA-256 hash."""
     actual_hash = compute_sha256(file_path)
     return actual_hash.lower() == expected_hash.strip().lower()
