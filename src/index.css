@@ -1,90 +1,272 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Outfit:wght@700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 /* ═══════════════════════════════════════════════════════════════
-   DESIGN TOKENS — Dark Mode (default)
+   DESIGN TOKENS — THEME SYSTEM
 ═══════════════════════════════════════════════════════════════ */
+
+/* ── 1. Solar Command (Default Aerospace Bronze & Solar Gold) ── */
 :root,
-.dark {
+.theme-amber {
   color-scheme: dark;
 
-  --bg-base:      #070A0E;
-  --bg-elevated:  #0B0F14;
-  --bg-surface:   #0F172A;
-  --bg-raised:    #151B23;
-  --bg-overlay:   #1A2230;
-  --bg-muted:     #222F3E;
+  --bg-base:      #0E0B06;
+  --bg-elevated:  #17120A;
+  --bg-surface:   #221B0F;
+  --bg-raised:    #2E2415;
+  --bg-overlay:   #3D301D;
+  --bg-muted:     #524128;
 
-  --border-subtle:  rgba(255,255,255,0.06);
-  --border-default: rgba(255,255,255,0.10);
-  --border-strong:  rgba(34,211,238,0.30);
+  --border-subtle:  rgba(245,158,11,0.14);
+  --border-default: rgba(245,158,11,0.24);
+  --border-strong:  rgba(251,191,36,0.50);
 
-  --text-primary:   #F1F5F9;
+  --text-primary:   #FFFBEB;
+  --text-secondary: #FDE68A;
+  --text-muted:     #D97706;
+  --text-inverse:   #0E0B06;
+
+  --accent-cyan:    #F59E0B;
+  --accent-cyan-dk: #B45309;
+  --accent-cyan-bg: rgba(245,158,11,0.14);
+  --accent-violet:  #F97316;
+  --accent-violet-bg: rgba(249,115,22,0.10);
+  --accent-emerald: #10B981;
+  --accent-amber:   #FBBF24;
+  --accent-rose:    #EF4444;
+
+  --accent-gradient-start: #D97706;
+  --accent-gradient-end:   #EA580C;
+  --accent-glow:           rgba(245,158,11,0.40);
+
+  --shadow-card:  0 8px 32px -4px rgba(0,0,0,0.6);
+  --shadow-glow:  0 0 24px -4px rgba(245,158,11,0.30);
+  --shadow-panel: 0 12px 40px -8px rgba(0,0,0,0.9);
+
+  --scrollbar-track: #0E0B06;
+  --scrollbar-thumb: #2E2415;
+
+  --grid-line: rgba(245,158,11,0.06);
+}
+
+/* ── 2. Cyber Obsidian (Tactical Deep Dark) ── */
+.dark,
+.theme-dark {
+  color-scheme: dark;
+
+  --bg-base:      #080C14;
+  --bg-elevated:  #0D131F;
+  --bg-surface:   #111A2E;
+  --bg-raised:    #16223B;
+  --bg-overlay:   #1C2B4A;
+  --bg-muted:     #25375C;
+
+  --border-subtle:  rgba(255,255,255,0.08);
+  --border-default: rgba(255,255,255,0.14);
+  --border-strong:  rgba(0,240,255,0.35);
+
+  --text-primary:   #F8FAFC;
   --text-secondary: #94A3B8;
-  --text-muted:     #475569;
-  --text-inverse:   #070A0E;
+  --text-muted:     #64748B;
+  --text-inverse:   #080C14;
 
-  --accent-cyan:    #22D3EE;
-  --accent-cyan-dk: #06B6D4;
-  --accent-cyan-bg: rgba(34,211,238,0.08);
+  --accent-cyan:    #00F0FF;
+  --accent-cyan-dk: #0891B2;
+  --accent-cyan-bg: rgba(0,240,255,0.10);
   --accent-violet:  #A78BFA;
-  --accent-violet-bg: rgba(167,139,250,0.08);
+  --accent-violet-bg: rgba(167,139,250,0.10);
+  --accent-emerald: #10B981;
+  --accent-amber:   #FBBF24;
+  --accent-rose:    #FB7185;
+
+  --accent-gradient-start: #0891B2;
+  --accent-gradient-end:   #2563EB;
+  --accent-glow:           rgba(0,240,255,0.35);
+
+  --shadow-card:  0 8px 32px -4px rgba(0,0,0,0.55);
+  --shadow-glow:  0 0 24px -4px rgba(0,240,255,0.28);
+  --shadow-panel: 0 12px 40px -8px rgba(0,0,0,0.85);
+
+  --scrollbar-track: #080C14;
+  --scrollbar-thumb: #1E293B;
+
+  --grid-line: rgba(0,240,255,0.05);
+}
+
+/* ── 3. Tactical Recon (Stealth Military Onyx & Emerald) ── */
+.theme-emerald {
+  color-scheme: dark;
+
+  --bg-base:      #050D0A;
+  --bg-elevated:  #091610;
+  --bg-surface:   #0D2018;
+  --bg-raised:    #132B20;
+  --bg-overlay:   #1A382B;
+  --bg-muted:     #244A39;
+
+  --border-subtle:  rgba(52,211,153,0.12);
+  --border-default: rgba(52,211,153,0.22);
+  --border-strong:  rgba(52,211,153,0.45);
+
+  --text-primary:   #F0FDF4;
+  --text-secondary: #A7F3D0;
+  --text-muted:     #6EE7B7;
+  --text-inverse:   #050D0A;
+
+  --accent-cyan:    #34D399;
+  --accent-cyan-dk: #059669;
+  --accent-cyan-bg: rgba(52,211,153,0.12);
+  --accent-violet:  #6EE7B7;
+  --accent-violet-bg: rgba(110,231,183,0.10);
+  --accent-emerald: #10B981;
+  --accent-amber:   #FBBF24;
+  --accent-rose:    #F87171;
+
+  --accent-gradient-start: #059669;
+  --accent-gradient-end:   #10B981;
+  --accent-glow:           rgba(52,211,153,0.35);
+
+  --shadow-card:  0 8px 32px -4px rgba(0,0,0,0.6);
+  --shadow-glow:  0 0 24px -4px rgba(52,211,153,0.28);
+  --shadow-panel: 0 12px 40px -8px rgba(0,0,0,0.9);
+
+  --scrollbar-track: #050D0A;
+  --scrollbar-thumb: #132B20;
+
+  --grid-line: rgba(52,211,153,0.06);
+}
+
+/* ── 4. Nebula Cyber (Deep Cosmos Void & Ultraviolet) ── */
+.theme-violet {
+  color-scheme: dark;
+
+  --bg-base:      #090614;
+  --bg-elevated:  #110C24;
+  --bg-surface:   #181133;
+  --bg-raised:    #221846;
+  --bg-overlay:   #2E205C;
+  --bg-muted:     #3E2C7A;
+
+  --border-subtle:  rgba(168,85,247,0.14);
+  --border-default: rgba(168,85,247,0.24);
+  --border-strong:  rgba(192,132,252,0.50);
+
+  --text-primary:   #FAF5FF;
+  --text-secondary: #E9D5FF;
+  --text-muted:     #A855F7;
+  --text-inverse:   #090614;
+
+  --accent-cyan:    #C084FC;
+  --accent-cyan-dk: #7E22CE;
+  --accent-cyan-bg: rgba(192,132,252,0.12);
+  --accent-violet:  #F472B6;
+  --accent-violet-bg: rgba(244,114,182,0.10);
   --accent-emerald: #34D399;
   --accent-amber:   #FBBF24;
   --accent-rose:    #FB7185;
 
-  --shadow-card:  0 4px 24px -4px rgba(0,0,0,0.6);
-  --shadow-glow:  0 0 20px -4px rgba(34,211,238,0.25);
-  --shadow-panel: 0 8px 32px -8px rgba(0,0,0,0.8);
+  --accent-gradient-start: #7E22CE;
+  --accent-gradient-end:   #EC4899;
+  --accent-glow:           rgba(192,132,252,0.35);
 
-  --scrollbar-track: #070A0E;
-  --scrollbar-thumb: #1E293B;
+  --shadow-card:  0 8px 32px -4px rgba(0,0,0,0.6);
+  --shadow-glow:  0 0 24px -4px rgba(192,132,252,0.30);
+  --shadow-panel: 0 12px 40px -8px rgba(0,0,0,0.9);
 
-  --grid-line: rgba(34,211,238,0.04);
+  --scrollbar-track: #090614;
+  --scrollbar-thumb: #221846;
+
+  --grid-line: rgba(192,132,252,0.06);
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   DESIGN TOKENS — Light Mode
-═══════════════════════════════════════════════════════════════ */
+/* ── 4. Solar Command (Aerospace Bronze & Gold) ── */
+.theme-amber {
+  color-scheme: dark;
+
+  --bg-base:      #0E0B06;
+  --bg-elevated:  #17120A;
+  --bg-surface:   #221B0F;
+  --bg-raised:    #2E2415;
+  --bg-overlay:   #3D301D;
+  --bg-muted:     #524128;
+
+  --border-subtle:  rgba(245,158,11,0.14);
+  --border-default: rgba(245,158,11,0.24);
+  --border-strong:  rgba(251,191,36,0.50);
+
+  --text-primary:   #FFFBEB;
+  --text-secondary: #FDE68A;
+  --text-muted:     #D97706;
+  --text-inverse:   #0E0B06;
+
+  --accent-cyan:    #F59E0B;
+  --accent-cyan-dk: #B45309;
+  --accent-cyan-bg: rgba(245,158,11,0.12);
+  --accent-violet:  #F97316;
+  --accent-violet-bg: rgba(249,115,22,0.10);
+  --accent-emerald: #10B981;
+  --accent-amber:   #FBBF24;
+  --accent-rose:    #EF4444;
+
+  --accent-gradient-start: #D97706;
+  --accent-gradient-end:   #EA580C;
+  --accent-glow:           rgba(245,158,11,0.35);
+
+  --shadow-card:  0 8px 32px -4px rgba(0,0,0,0.6);
+  --shadow-glow:  0 0 24px -4px rgba(245,158,11,0.30);
+  --shadow-panel: 0 12px 40px -8px rgba(0,0,0,0.9);
+
+  --scrollbar-track: #0E0B06;
+  --scrollbar-thumb: #2E2415;
+
+  --grid-line: rgba(245,158,11,0.06);
+}
+
+/* ── 5. Titanium Lab (Precision Daylight GIS Lab) ── */
+.theme-light,
 .light {
   color-scheme: light;
 
-  --bg-base:      #F0F4F8;
+  --bg-base:      #F1F5F9;
   --bg-elevated:  #FFFFFF;
   --bg-surface:   #F8FAFC;
-  --bg-raised:    #EEF2F7;
+  --bg-raised:    #EDF2F7;
   --bg-overlay:   #E2E8F0;
   --bg-muted:     #CBD5E1;
 
-  --border-subtle:  rgba(0,0,0,0.06);
-  --border-default: rgba(0,0,0,0.10);
-  --border-strong:  rgba(6,182,212,0.45);
+  --border-subtle:  rgba(15,23,42,0.08);
+  --border-default: rgba(15,23,42,0.15);
+  --border-strong:  rgba(2,132,199,0.45);
 
   --text-primary:   #0F172A;
-  --text-secondary: #475569;
-  --text-muted:     #94A3B8;
+  --text-secondary: #334155;
+  --text-muted:     #64748B;
   --text-inverse:   #FFFFFF;
 
-  --accent-cyan:    #0891B2;
-  --accent-cyan-dk: #0E7490;
-  --accent-cyan-bg: rgba(8,145,178,0.08);
+  --accent-cyan:    #0284C7;
+  --accent-cyan-dk: #0369A1;
+  --accent-cyan-bg: rgba(2,132,199,0.10);
   --accent-violet:  #7C3AED;
-  --accent-violet-bg: rgba(124,58,237,0.08);
+  --accent-violet-bg: rgba(124,58,237,0.10);
   --accent-emerald: #059669;
   --accent-amber:   #D97706;
   --accent-rose:    #E11D48;
 
-  --shadow-card:  0 2px 12px -2px rgba(0,0,0,0.12);
-  --shadow-glow:  0 0 16px -4px rgba(8,145,178,0.20);
-  --shadow-panel: 0 4px 24px -4px rgba(0,0,0,0.15);
+  --accent-gradient-start: #0284C7;
+  --accent-gradient-end:   #2563EB;
+  --accent-glow:           rgba(2,132,199,0.25);
+
+  --shadow-card:  0 4px 16px -2px rgba(15,23,42,0.08);
+  --shadow-glow:  0 0 16px -2px rgba(2,132,199,0.20);
+  --shadow-panel: 0 8px 30px -4px rgba(15,23,42,0.14);
 
   --scrollbar-track: #E2E8F0;
   --scrollbar-thumb: #94A3B8;
 
-  --grid-line: rgba(8,145,178,0.06);
+  --grid-line: rgba(2,132,199,0.07);
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -102,16 +284,29 @@
   body {
     background-color: var(--bg-base);
     color: var(--text-primary);
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
-    transition: background-color 0.3s ease, color 0.3s ease;
+    font-family: 'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, sans-serif;
+    font-size: 13.5px;
+    line-height: 1.55;
+    letter-spacing: -0.012em;
+    transition: background-color 0.35s cubic-bezier(0.16, 1, 0.3, 1), color 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  h1, h2, h3, h4, h5, h6, .font-display {
+    font-family: 'Space Grotesk', 'Plus Jakarta Sans', sans-serif;
+    letter-spacing: -0.025em;
+  }
+
+  code, pre, .font-mono {
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: -0.01em;
   }
 
   ::selection {
-    background: rgba(34,211,238,0.22);
+    background: var(--accent-cyan-bg);
     color: var(--accent-cyan);
   }
   .light ::selection {
-    background: rgba(8,145,178,0.18);
+    background: rgba(2,132,199,0.18);
     color: var(--accent-cyan);
   }
 }
@@ -133,12 +328,13 @@
   .tv-card {
     background: var(--bg-elevated);
     border: 1px solid var(--border-subtle);
-    border-radius: 12px;
+    border-radius: 14px;
     box-shadow: var(--shadow-card);
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1);
   }
   .tv-card:hover {
     border-color: var(--border-default);
+    transform: translateY(-2px);
   }
   .tv-card-glow {
     border-color: var(--border-strong);
@@ -174,76 +370,136 @@
     border-radius: 8px;
   }
 
-  /* ── Buttons ─────────────────────────────────────────────────── */
+  /* ── Custom Workstation Buttons System ──────────────────────── */
   .tv-btn {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
+    justify-content: center;
+    gap: 7px;
     padding: 8px 16px;
     border-radius: 8px;
     font-size: 13px;
     font-weight: 600;
+    letter-spacing: -0.01em;
     cursor: pointer;
-    transition: all 0.18s cubic-bezier(0.4,0,0.2,1);
+    transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
     border: 1px solid transparent;
     white-space: nowrap;
     outline: none;
+    user-select: none;
+    position: relative;
+  }
+  .tv-btn > svg {
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .tv-btn:hover:not(:disabled) > svg {
+    transform: translateX(2px);
   }
   .tv-btn:focus-visible {
     outline: 2px solid var(--accent-cyan);
     outline-offset: 2px;
   }
+  
+  /* Primary Button: Dynamic Theme Gradient with responsive glow */
   .tv-btn-primary {
-    background: var(--accent-cyan);
-    color: #070A0E;
-    border-color: var(--accent-cyan);
-    box-shadow: 0 0 0 0 var(--accent-cyan);
+    background: linear-gradient(135deg, var(--accent-gradient-start, #06B6D4) 0%, var(--accent-gradient-end, #2563EB) 100%);
+    color: #FFFFFF;
+    border-color: var(--border-strong);
+    box-shadow: 0 2px 10px var(--accent-glow, rgba(6, 182, 212, 0.25)), inset 0 1px 0 rgba(255, 255, 255, 0.2);
   }
-  .tv-btn-primary:hover {
-    filter: brightness(1.1);
-    box-shadow: 0 4px 16px -4px rgba(34,211,238,0.5);
-    transform: translateY(-1px);
+  .tv-btn-primary:hover:not(:disabled) {
+    transform: translateY(-1.5px);
+    box-shadow: 0 6px 20px -2px var(--accent-glow, rgba(6, 182, 212, 0.45)), 0 0 16px var(--accent-glow, rgba(37, 99, 235, 0.35));
+    filter: brightness(1.08);
   }
-  .tv-btn-primary:active { transform: translateY(0); filter: brightness(0.95); }
-  .light .tv-btn-primary { color: #FFFFFF; }
+  .tv-btn-primary:active:not(:disabled) {
+    transform: translateY(0);
+    filter: brightness(0.95);
+    box-shadow: 0 2px 8px var(--accent-glow, rgba(6, 182, 212, 0.3));
+  }
 
+  /* Secondary Button: Clean Glassmorphism with thin technical border */
+  .tv-btn-secondary {
+    background: rgba(255, 255, 255, 0.04);
+    backdrop-filter: blur(8px);
+    color: var(--text-primary);
+    border-color: rgba(255, 255, 255, 0.12);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  }
+  .tv-btn-secondary:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(34, 211, 238, 0.45);
+    color: var(--accent-cyan);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px -2px rgba(0, 0, 0, 0.35), 0 0 12px rgba(34, 211, 238, 0.15);
+  }
+  .tv-btn-secondary:active:not(:disabled) {
+    transform: translateY(0);
+  }
+
+  /* Ghost Button */
   .tv-btn-ghost {
     background: transparent;
     color: var(--text-secondary);
-    border-color: var(--border-default);
+    border-color: transparent;
   }
-  .tv-btn-ghost:hover {
+  .tv-btn-ghost:hover:not(:disabled) {
     background: var(--bg-surface);
     color: var(--text-primary);
-    border-color: var(--border-strong);
+    border-color: var(--border-default);
   }
 
-  .tv-btn-danger {
-    background: rgba(251,113,133,0.12);
-    color: var(--accent-rose);
-    border-color: rgba(251,113,133,0.30);
+  /* Success Button: Emerald Green */
+  .tv-btn-success {
+    background: linear-gradient(135deg, #059669 0%, #10B981 100%);
+    color: #FFFFFF;
+    border-color: rgba(52, 211, 153, 0.4);
+    box-shadow: 0 2px 10px rgba(16, 185, 129, 0.25);
   }
-  .tv-btn-danger:hover {
-    background: rgba(251,113,133,0.22);
-    box-shadow: 0 4px 12px -4px rgba(251,113,133,0.35);
+  .tv-btn-success:hover:not(:disabled) {
+    transform: translateY(-1.5px);
+    box-shadow: 0 6px 18px -2px rgba(16, 185, 129, 0.45);
+    filter: brightness(1.05);
+  }
+
+  /* Danger Button: Crimson / Rose */
+  .tv-btn-danger {
+    background: rgba(239, 68, 68, 0.12);
+    color: var(--accent-rose);
+    border-color: rgba(239, 68, 68, 0.35);
+  }
+  .tv-btn-danger:hover:not(:disabled) {
+    background: rgba(239, 68, 68, 0.22);
+    box-shadow: 0 4px 14px -2px rgba(239, 68, 68, 0.35);
+    transform: translateY(-1px);
   }
 
   .tv-btn-sm {
-    padding: 5px 12px;
+    padding: 5px 11px;
     font-size: 11px;
     border-radius: 6px;
+    gap: 5px;
   }
   .tv-btn-lg {
-    padding: 12px 28px;
+    padding: 12px 24px;
     font-size: 15px;
     border-radius: 10px;
+    gap: 8px;
   }
   .tv-btn-icon {
     padding: 8px;
     border-radius: 8px;
+    min-width: 36px;
+    min-height: 36px;
+  }
+  .tv-btn-icon:hover:not(:disabled) {
+    transform: scale(1.05);
+  }
+  .tv-btn-icon:active:not(:disabled) {
+    transform: scale(0.96);
   }
   .tv-btn:disabled {
-    opacity: 0.45;
+    opacity: 0.42;
     cursor: not-allowed;
     transform: none !important;
     filter: none !important;
@@ -302,7 +558,7 @@
   .tv-badge-cyan {
     background: var(--accent-cyan-bg);
     color: var(--accent-cyan);
-    border: 1px solid rgba(34,211,238,0.25);
+    border: 1px solid var(--border-strong);
   }
   .tv-badge-emerald {
     background: rgba(52,211,153,0.10);
@@ -716,3 +972,157 @@
   scrollbar-width: thin;
   scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   DRONE WORKSTATION & GIS TECHNICAL UTILITIES
+═══════════════════════════════════════════════════════════════ */
+/* Animated drag-over dashed border */
+.tv-dropzone-active {
+  border-color: var(--accent-cyan) !important;
+  background: rgba(34, 211, 238, 0.06) !important;
+  box-shadow: 0 0 30px rgba(34, 211, 238, 0.25), inset 0 0 20px rgba(34, 211, 238, 0.1) !important;
+}
+
+@keyframes dashFlow {
+  to { stroke-dashoffset: -32; }
+}
+.tv-dashed-border {
+  border: 2px dashed rgba(255, 255, 255, 0.15);
+  transition: all 0.25s ease;
+}
+.tv-dashed-border:hover {
+  border-color: rgba(34, 211, 238, 0.5);
+  background: rgba(34, 211, 238, 0.03);
+}
+
+/* Fine Technical Grid background */
+.tv-grid-bg {
+  background-size: 24px 24px;
+  background-image: 
+    linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+}
+
+/* Floating CAD Viewport Toolbar */
+.tv-floating-bar {
+  background: rgba(11, 15, 23, 0.85);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(0, 0, 0, 0.4);
+  border-radius: 10px;
+}
+
+/* Precision Corner Marks */
+.tv-corner-mark {
+  position: relative;
+}
+.tv-corner-mark::before {
+  content: '+';
+  position: absolute;
+  top: 4px;
+  left: 6px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: rgba(34, 211, 238, 0.4);
+  pointer-events: none;
+}
+.tv-corner-mark::after {
+  content: '+';
+  position: absolute;
+  bottom: 4px;
+  right: 6px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: rgba(34, 211, 238, 0.4);
+  pointer-events: none;
+}
+
+/* Hardware Status LEDs */
+.tv-led-online {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: #10B981;
+  box-shadow: 0 0 8px #10B981;
+  display: inline-block;
+  animation: ledPulse 2.5s infinite;
+}
+.tv-led-busy {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: #F59E0B;
+  box-shadow: 0 0 8px #F59E0B;
+  display: inline-block;
+  animation: ledPulse 1.2s infinite;
+}
+.tv-led-offline {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: #06B6D4;
+  box-shadow: 0 0 8px #06B6D4;
+  display: inline-block;
+}
+
+@keyframes ledPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.55; transform: scale(0.9); }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   THEME HARMONIZATION & LIGHT MODE ELEVATION
+═══════════════════════════════════════════════════════════════ */
+.light .tv-card,
+.light .tech-panel,
+.light .tv-surface {
+  background-color: var(--bg-elevated);
+  border-color: var(--border-subtle);
+  box-shadow: var(--shadow-card);
+}
+
+.light .bg-dark-950,
+.light .bg-dark-900,
+.light .bg-slate-950,
+.light .bg-slate-900 {
+  background-color: var(--bg-surface) !important;
+}
+
+.light .border-slate-800,
+.light .border-slate-700 {
+  border-color: var(--border-subtle) !important;
+}
+
+.light .text-slate-100,
+.light .text-white {
+  color: var(--text-primary) !important;
+}
+
+.light .text-slate-200,
+.light .text-slate-300 {
+  color: var(--text-secondary) !important;
+}
+
+.light .text-slate-400 {
+  color: var(--text-muted) !important;
+}
+
+.light .tv-floating-bar {
+  background: rgba(255, 255, 255, 0.88);
+  border-color: rgba(0, 0, 0, 0.1);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+}
+
+/* Dynamic theme glow utility */
+.theme-glow {
+  box-shadow: var(--shadow-glow);
+}
+
+.theme-border-accent {
+  border-color: var(--accent-cyan) !important;
+}
+
+.theme-text-accent {
+  color: var(--accent-cyan) !important;
+}
+

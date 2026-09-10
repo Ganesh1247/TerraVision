@@ -1,16 +1,18 @@
 import time
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, Request, status
-from fastapi.responses import JSONResponse
-from fastapi.middleware.cors import CORSMiddleware
 
-from backend.app.config import settings
-from backend.app.core.logger import logger
-from backend.app.core.database import init_db
+from fastapi import FastAPI, Request, status
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+
 from backend.app.api.routes import api_router
-from backend.app.api.routes.stream import router as stream_router
 from backend.app.api.routes.health import router as health_router
 from backend.app.api.routes.metrics import router as metrics_router
+from backend.app.api.routes.stream import router as stream_router
+from backend.app.config import settings
+from backend.app.core.database import init_db
+from backend.app.core.logger import logger
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -22,11 +24,12 @@ async def lifespan(app: FastAPI):
     # Shutdown
     logger.info(f"Stopping {settings.PROJECT_NAME} daemon...")
 
+
 app = FastAPI(
     title=settings.PROJECT_NAME,
     version=settings.VERSION,
     description="Edge-ready offline drone video 3D reconstruction system (SIH26158 NTRO).",
-    lifespan=lifespan
+    lifespan=lifespan,
 )
 
 # CORS Configuration
@@ -37,6 +40,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 # Request Timing & Error Boundary Middleware
 @app.middleware("http")
@@ -55,15 +59,17 @@ async def request_timing_and_error_boundary(request: Request, call_next):
                 "error": "Internal Processing Error",
                 "detail": str(exc),
                 "path": request.url.path,
-                "timestamp": time.time()
-            }
+                "timestamp": time.time(),
+            },
         )
+
 
 # Mount API Routers
 app.include_router(health_router)
 app.include_router(metrics_router)
 app.include_router(stream_router)
 app.include_router(api_router, prefix=settings.API_V1_STR)
+
 
 @app.get("/")
 async def root_index():
@@ -74,5 +80,5 @@ async def root_index():
         "hardware_target": settings.TARGET_HARDWARE,
         "docs_url": "/docs",
         "health_url": "/health",
-        "metrics_url": "/metrics"
+        "metrics_url": "/metrics",
     }

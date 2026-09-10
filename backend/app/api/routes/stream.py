@@ -1,6 +1,8 @@
 import asyncio
 import json
+
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+
 from backend.app.core.logger import logger
 from backend.app.pipeline.orchestrator import orchestrator
 
@@ -9,8 +11,8 @@ router = APIRouter()
 
 @router.websocket("/ws/jobs/{job_id}")
 async def websocket_job_stream(websocket: WebSocket, job_id: str):
-    """
-    High-throughput WebSocket stream for live reconstruction observability.
+    """High-throughput WebSocket stream for live reconstruction observability.
+
     Pushes:
     - `STAGE_PROGRESS`: Step progress (0-100%) & throughput
     - `PARTIAL_3D_UPDATE`: Incremental 6-DoF camera frustums, sparse points, mesh updates
@@ -83,9 +85,7 @@ async def websocket_job_stream(websocket: WebSocket, job_id: str):
         # asyncio.wait so we can cancel the other task when one exits
         hb_task = asyncio.create_task(_heartbeat())
         rx_task = asyncio.create_task(_receiver())
-        _done, _pending = await asyncio.wait(
-            [hb_task, rx_task], return_when=asyncio.FIRST_COMPLETED
-        )
+        _done, _pending = await asyncio.wait([hb_task, rx_task], return_when=asyncio.FIRST_COMPLETED)
         for t in _pending:
             t.cancel()
 

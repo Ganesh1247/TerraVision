@@ -1,17 +1,19 @@
-import pytest
 import numpy as np
-from backend.app.pipeline.stages.s5_sfm import SfMStage
+import pytest
+
 from backend.app.pipeline.stages.base import StageContext
+from backend.app.pipeline.stages.s5_sfm import SfMStage
+
 
 @pytest.mark.asyncio
 async def test_incremental_sfm_triangulation():
     # Pose 1 and Pose 2 with synthetic match points
     pose1 = {"frame_index": 0, "quaternion": [0, 0, 0, 1], "position": [0, 0, 10]}
     pose2 = {"frame_index": 1, "quaternion": [0, 0, 0, 1], "position": [1, 0, 10]}
-    
+
     pts1 = np.array([[100, 100], [200, 100], [150, 200], [250, 200], [180, 150]], dtype=np.float32)
     pts2 = np.array([[95, 100], [195, 100], [145, 200], [245, 200], [175, 150]], dtype=np.float32)
-    
+
     ctx = StageContext(
         job_id="TEST-007",
         dataset_name="Test SfM",
@@ -19,8 +21,8 @@ async def test_incremental_sfm_triangulation():
         shared_state={
             "camera_poses": [pose1, pose2],
             "frame_matches": [{"pts1": pts1, "pts2": pts2}],
-            "keyframes": [np.zeros((240, 320, 3), dtype=np.uint8), np.zeros((240, 320, 3), dtype=np.uint8)]
-        }
+            "keyframes": [np.zeros((240, 320, 3), dtype=np.uint8), np.zeros((240, 320, 3), dtype=np.uint8)],
+        },
     )
 
     stage = SfMStage()
@@ -29,11 +31,12 @@ async def test_incremental_sfm_triangulation():
     assert "sparse_points" in ctx.shared_state
     assert len(ctx.shared_state["sparse_points"]) > 0
 
+
 @pytest.mark.asyncio
 async def test_sfm_midas_monocular_depth_fallback():
     pose1 = {"frame_index": 0, "quaternion": [0, 0, 0, 1], "position": [0, 0, 10]}
-    pose2 = {"frame_index": 1, "quaternion": [0, 0, 0, 1], "position": [0.01, 0, 10]} # tiny baseline
-    
+    pose2 = {"frame_index": 1, "quaternion": [0, 0, 0, 1], "position": [0.01, 0, 10]}  # tiny baseline
+
     ctx = StageContext(
         job_id="TEST-008",
         dataset_name="Test Single Angle",
@@ -41,8 +44,8 @@ async def test_sfm_midas_monocular_depth_fallback():
         shared_state={
             "camera_poses": [pose1, pose2],
             "frame_matches": [],
-            "keyframes": [np.zeros((240, 320, 3), dtype=np.uint8), np.zeros((240, 320, 3), dtype=np.uint8)]
-        }
+            "keyframes": [np.zeros((240, 320, 3), dtype=np.uint8), np.zeros((240, 320, 3), dtype=np.uint8)],
+        },
     )
 
     stage = SfMStage()

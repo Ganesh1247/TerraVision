@@ -1,10 +1,9 @@
-#!/usr/bin/env python3
-"""
-Terra Vision Backend Launcher (SIH26158)
+"""Terra Vision Backend Launcher (SIH26158).
+
 Runs Uvicorn server on http://127.0.0.1:8000
 """
+
 import sys
-import os
 from pathlib import Path
 
 # Add project root to sys.path
@@ -19,10 +18,4 @@ if __name__ == "__main__":
     print("  TERRA VISION — OFFLINE EDGE RECONSTRUCTION SYSTEM (SIH26158)  ")
     print("  100% Offline Air-Gapped Operation | GPS-Free VIO & SfM Engine   ")
     print("==================================================================")
-    uvicorn.run(
-        "backend.app.main:app",
-        host="0.0.0.0",
-        port=8000,
-        reload=False,
-        log_level="info"
-    )
+    uvicorn.run("backend.app.main:app", host="0.0.0.0", port=8000, reload=False, log_level="info")

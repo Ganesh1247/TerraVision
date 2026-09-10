@@ -1,7 +1,9 @@
-import pytest
 import numpy as np
-from backend.app.pipeline.stages.s2_preprocessing import PreprocessingStage
+import pytest
+
 from backend.app.pipeline.stages.base import StageContext
+from backend.app.pipeline.stages.s2_preprocessing import PreprocessingStage
+
 
 @pytest.mark.asyncio
 async def test_adaptive_preprocessing_normal_pass():
@@ -11,22 +13,23 @@ async def test_adaptive_preprocessing_normal_pass():
         job_id="TEST-003",
         dataset_name="Test Preproc",
         config={},
-        shared_state={"keyframes": [dummy_frame]}
+        shared_state={"keyframes": [dummy_frame]},
     )
     result = await stage.run(ctx)
     assert result["status"] == "complete"
     assert "enhanced_frames" in ctx.shared_state
     assert len(ctx.shared_state["enhanced_frames"]) == 1
 
+
 @pytest.mark.asyncio
 async def test_low_light_enhancement_trigger():
     stage = PreprocessingStage()
-    dark_frame = np.full((120, 160, 3), 15, dtype=np.uint8) # Dark
+    dark_frame = np.full((120, 160, 3), 15, dtype=np.uint8)  # Dark
     ctx = StageContext(
         job_id="TEST-004",
         dataset_name="Test Dark",
         config={"force_low_light": True},
-        shared_state={"keyframes": [dark_frame]}
+        shared_state={"keyframes": [dark_frame]},
     )
     result = await stage.run(ctx)
     assert result["status"] == "complete"

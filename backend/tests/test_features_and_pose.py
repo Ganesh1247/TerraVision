@@ -1,9 +1,11 @@
-import pytest
-import numpy as np
 import cv2
+import numpy as np
+import pytest
+
+from backend.app.pipeline.stages.base import StageContext
 from backend.app.pipeline.stages.s3_feature_extraction import FeatureExtractionStage
 from backend.app.pipeline.stages.s4_pose_estimation import PoseEstimationStage
-from backend.app.pipeline.stages.base import StageContext
+
 
 @pytest.mark.asyncio
 async def test_feature_extraction_and_pose():
@@ -19,7 +21,7 @@ async def test_feature_extraction_and_pose():
         job_id="TEST-005",
         dataset_name="Test VO",
         config={},
-        shared_state={"keyframes": [f1, f2], "enhanced_frames": [f1, f2]}
+        shared_state={"keyframes": [f1, f2], "enhanced_frames": [f1, f2]},
     )
 
     feat_stage = FeatureExtractionStage()

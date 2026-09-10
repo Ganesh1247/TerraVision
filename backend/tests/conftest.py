@@ -3,10 +3,10 @@
 # Provides async-capable DB setup, temp directories, and common mocks.
 # ==============================================================================
 
-import pytest
 import asyncio
-import tempfile
 from pathlib import Path
+
+import pytest
 
 
 # ── Event loop policy for asyncio tests ───────────────────────────────────────
@@ -39,10 +39,11 @@ def minimal_job_config() -> dict:
 # ── DB initialisation fixture (async) ────────────────────────────────────────
 @pytest.fixture(scope="session", autouse=True)
 async def init_test_database():
-    """
-    Initialize the SQLite test database once per test session.
+    """Initialize the SQLite test database once per test session.
+
     Uses an in-memory or temp file path so tests are fully isolated.
     """
     from backend.app.core.database import init_db
+
     await init_db()
     yield

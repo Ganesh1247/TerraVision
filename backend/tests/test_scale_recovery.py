@@ -1,7 +1,9 @@
-import pytest
 import numpy as np
-from backend.app.pipeline.stages.s6_scale_recovery import ScaleRecoveryStage
+import pytest
+
 from backend.app.pipeline.stages.base import StageContext
+from backend.app.pipeline.stages.s6_scale_recovery import ScaleRecoveryStage
+
 
 @pytest.mark.asyncio
 async def test_scale_recovery_cues_fusion():
@@ -9,7 +11,7 @@ async def test_scale_recovery_cues_fusion():
     points = []
     for x in np.linspace(-10, 10, 20):
         for y in np.linspace(-10, 10, 20):
-            points.append([x, y, 0.0]) # ground
+            points.append([x, y, 0.0])  # ground
     for _ in range(50):
         points.append([np.random.uniform(-5, 5), np.random.uniform(-5, 5), np.random.uniform(2, 8)])
 
@@ -21,8 +23,8 @@ async def test_scale_recovery_cues_fusion():
             "sparse_points": points,
             "keyframes": [np.zeros((100, 100, 3), dtype=np.uint8)],
             "has_imu": True,
-            "imu_telemetry": [{"ax": 0.0, "ay": 0.0, "az": 9.81}]
-        }
+            "imu_telemetry": [{"ax": 0.0, "ay": 0.0, "az": 9.81}],
+        },
     )
 
     stage = ScaleRecoveryStage()

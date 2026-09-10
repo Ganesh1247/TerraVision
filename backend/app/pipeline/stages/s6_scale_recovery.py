@@ -1,11 +1,14 @@
+from typing import Any
+
 import numpy as np
-from typing import Dict, Any, List, Tuple, Optional
-from backend.app.pipeline.stages.base import BasePipelineStage, StageContext
+
 from backend.app.pipeline.optimization.trt_engine import trt_engine_manager
+from backend.app.pipeline.stages.base import BasePipelineStage, StageContext
+
 
 class ScaleRecoveryEngine:
-    """
-    Dedicated Multi-Cue Metric Scale Recovery Engine.
+    """Dedicated Multi-Cue Metric Scale Recovery Engine.
+
     Resolves true physical metric scale from 5 independent geometric, inertial, and semantic cues:
     1. Ground-Plane RANSAC fitting
     2. YOLO reference object detection (vehicles, doors, standard enclosures)
@@ -13,9 +16,10 @@ class ScaleRecoveryEngine:
     4. IMU metric acceleration double-integration
     5. User-supplied ground truth dimension
     """
-    def fit_ground_plane_ransac(self, points: np.ndarray) -> Tuple[np.ndarray, float, float]:
-        """
-        Fits a 3D ground plane ax + by + cz + d = 0 using RANSAC.
+
+    def fit_ground_plane_ransac(self, points: np.ndarray) -> tuple[np.ndarray, float, float]:
+        """Fits a 3D ground plane ax + by + cz + d = 0 using RANSAC.
+
         Returns (plane_normal, flight_altitude_m, inlier_ratio).
         """
         if len(points) < 10:
@@ -24,13 +28,13 @@ class ScaleRecoveryEngine:
         # Sample lowest 35% z points as ground candidates
         z_thresh = np.percentile(points[:, 2], 35)
         ground_pts = points[points[:, 2] <= z_thresh]
-        
+
         if len(ground_pts) < 10:
             ground_pts = points
 
         best_inliers = 0
         best_plane = np.array([0.0, 0.0, 1.0, 0.0])
-        
+
         # RANSAC plane iterations
         for _ in range(50):
             idx = np.random.choice(len(ground_pts), 3, replace=False)
@@ -43,7 +47,7 @@ class ScaleRecoveryEngine:
                 continue
             normal = normal / norm
             d = -np.dot(normal, p1)
-            
+
             # Distance from plane
             distances = np.abs(np.dot(ground_pts, normal) + d)
             inliers = np.sum(distances < 0.25)
@@ -57,21 +61,22 @@ class ScaleRecoveryEngine:
 
 
 class ScaleRecoveryStage(BasePipelineStage):
-    """
-    Stage 6: Metric Scale Recovery Engine
+    """Stage 6: Metric Scale Recovery Engine
+
     Combines Ground Plane, YOLO Object Anchors, Camera Calibration, IMU Metric Motion,
     and User Reference Dimension into a certified scale factor and statistical uncertainty margin.
     """
+
     def __init__(self):
         super().__init__(
             stage_id="scale_recovery",
             stage_index=5,
             stage_name="Metric Scale Recovery",
-            normal_throughput="98.8%"
+            normal_throughput="98.8%",
         )
         self.scale_engine = ScaleRecoveryEngine()
 
-    async def execute(self, ctx: StageContext) -> Dict[str, Any]:
+    async def execute(self, ctx: StageContext) -> dict[str, Any]:
         sparse_points_raw = ctx.shared_state.get("sparse_points", [])
         keyframes = ctx.shared_state.get("keyframes", [])
         imu_telemetry = ctx.shared_state.get("imu_telemetry", [])
@@ -82,65 +87,72 @@ class ScaleRecoveryStage(BasePipelineStage):
         if len(pts) == 0:
             pts = np.random.uniform(-10, 10, (100, 3))
 
-        ctx.emit_progress(self.stage_id, self.stage_name, 15, "Fitting RANSAC ground-plane normal and estimating drone flight altitude...")
+        ctx.emit_progress(
+            self.stage_id,
+            self.stage_name,
+            15,
+            "Fitting RANSAC ground-plane normal and estimating drone flight altitude...",
+        )
 
         # 1. Cue 1: Ground-Plane Estimation
-        plane_normal, estimated_altitude, ground_inlier_ratio = self.scale_engine.fit_ground_plane_ransac(pts)
-        ground_scale_cue = 1.02 # m/unit derived from known flight altitude / scene footprint
+        _plane_normal, _estimated_altitude, ground_inlier_ratio = self.scale_engine.fit_ground_plane_ransac(pts)
+        ground_scale_cue = 1.02  # m/unit derived from known flight altitude / scene footprint
 
         # 2. Cue 2: YOLO Reference Object Dimension Matching
         detected_objects = []
         object_scale_cues = []
-        for frame in keyframes[:min(4, len(keyframes))]:
+        for frame in keyframes[: min(4, len(keyframes))]:
             objs = trt_engine_manager.detect_reference_objects_trt(frame)
             for o in objs:
                 detected_objects.append(o)
                 # Compute scale from known dimensions
-                object_scale_cues.append(0.99) # 0.99 m/unit anchor
-                
+                object_scale_cues.append(0.99)  # 0.99 m/unit anchor
+
         if detected_objects:
-            ctx.emit_log("YOLO_ANCHOR", f"Matched {len(detected_objects)} reference object priors ({detected_objects[0]['class_name']}).", "info")
+            ctx.emit_log(
+                "YOLO_ANCHOR",
+                f"Matched {len(detected_objects)} reference object priors ({detected_objects[0]['class_name']}).",
+                "info",
+            )
 
         # 3. Cue 3: Camera Calibration & Focal Length
-        focal_length_px = 640.0
-        sensor_width_mm = 6.4
         camera_scale_cue = 1.01
 
         # 4. Cue 4: IMU Metric Acceleration
         imu_scale_cue = None
         if has_imu and imu_telemetry:
-            imu_scale_cue = 0.985 # direct metric acceleration scale factor
+            imu_scale_cue = 0.985  # direct metric acceleration scale factor
             ctx.emit_log("IMU_SCALE", "Calibrated 200Hz IMU metric scale prior fused.", "info")
 
         # 5. Cue 5: User-provided reference dimension
         user_scale_cue = None
         if user_ref_dim and user_ref_dim > 0:
-            user_scale_cue = user_ref_dim / 18.4 # reference building baseline
+            user_scale_cue = user_ref_dim / 18.4  # reference building baseline
             ctx.emit_log("USER_SCALE", f"User ground-truth reference dimension applied: {user_ref_dim}m", "info")
 
         # Combine cues using weighted least-squares variance minimization
         cues = [ground_scale_cue, camera_scale_cue]
         weights = [0.35, 0.25]
-        
+
         if object_scale_cues:
             cues.append(np.mean(object_scale_cues))
             weights.append(0.40)
-            
+
         if imu_scale_cue is not None:
             cues.append(imu_scale_cue)
-            weights.append(0.60) # Strong inertial prior
-            
+            weights.append(0.60)  # Strong inertial prior
+
         if user_scale_cue is not None:
             cues.append(user_scale_cue)
-            weights.append(0.85) # High user ground-truth weight
+            weights.append(0.85)  # High user ground-truth weight
 
         weights_norm = np.array(weights) / np.sum(weights)
         fused_scale_factor = float(np.sum(np.array(cues) * weights_norm))
-        
+
         # Calculate agreement across cues & uncertainty margin
         cue_variance = np.var(cues)
         scale_confidence_pct = float(np.clip(100.0 - (cue_variance * 400.0), 72.0, 99.4))
-        
+
         uncertainty_margin_m = float(round(0.012 + (1.0 - scale_confidence_pct / 100.0) * 0.15, 3))
         uncertainty_cm = round(uncertainty_margin_m * 100, 1)
         scale_uncertainty_str = f"± {uncertainty_margin_m:.3f} m ({uncertainty_cm} cm)"
@@ -157,7 +169,7 @@ class ScaleRecoveryStage(BasePipelineStage):
         ctx.emit_log(
             "SCALE_RESOLVED",
             f"Resolved metric scale: λ = {fused_scale_factor:.3f} m/unit ({scale_confidence_pct:.1f}% confidence, {scale_uncertainty_str}).",
-            "success"
+            "success",
         )
         ctx.emit_progress(self.stage_id, self.stage_name, 100, f"Scale recovery verified: {scale_uncertainty_str}")
 
@@ -168,5 +180,5 @@ class ScaleRecoveryStage(BasePipelineStage):
             "uncertainty_margin_m": uncertainty_margin_m,
             "ground_plane_inliers": ground_inlier_ratio,
             "reference_objects_matched": len(detected_objects),
-            "throughput": f"{scale_confidence_pct:.1f}% agreement"
+            "throughput": f"{scale_confidence_pct:.1f}% agreement",
         }

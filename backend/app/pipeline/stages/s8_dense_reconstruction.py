@@ -1,18 +1,19 @@
+from typing import Any
+
 import numpy as np
 import trimesh
-from typing import Dict, Any, List, Tuple
+
 from backend.app.pipeline.stages.base import BasePipelineStage, StageContext
-from backend.app.models.schemas import MeshUpdateChunk
+
 
 class DenseMeshBuilderWrapper:
-    """
-    Dense Reconstruction Engine (Open3D / Multi-View Stereo interface).
+    """Dense Reconstruction Engine (Open3D / Multi-View Stereo interface).
+
     Densifies sparse tie points, estimates surface normals, and reconstructs Poisson triangular mesh.
     """
-    def reconstruct_mesh(self, points: np.ndarray) -> Tuple[trimesh.Trimesh, int, int]:
-        """
-        Creates an airtight surface mesh from 3D points with normal estimation.
-        """
+
+    def reconstruct_mesh(self, points: np.ndarray) -> tuple[trimesh.Trimesh, int, int]:
+        """Creates an airtight surface mesh from 3D points with normal estimation."""
         if len(points) < 8:
             # Generate minimal fallback cube if point cloud is sparse
             mesh = trimesh.creation.box(extents=[10, 10, 4])
@@ -47,27 +48,33 @@ class DenseMeshBuilderWrapper:
 
 
 class DenseReconstructionStage(BasePipelineStage):
-    """
-    Stage 8: Dense Mesh Reconstruction
+    """Stage 8: Dense Mesh Reconstruction
+
     Converts scale-validated sparse tie points into a dense point cloud and builds
     a textured triangular 3D surface polygon mesh via Poisson surface reconstruction.
     """
+
     def __init__(self):
         super().__init__(
             stage_id="dense_reconstruction",
             stage_index=7,
             stage_name="Dense Mesh Reconstruction",
-            normal_throughput="185,000 pts/s"
+            normal_throughput="185,000 pts/s",
         )
         self.builder = DenseMeshBuilderWrapper()
 
-    async def execute(self, ctx: StageContext) -> Dict[str, Any]:
+    async def execute(self, ctx: StageContext) -> dict[str, Any]:
         sparse_points = ctx.shared_state.get("sparse_points", [])
         pts = np.array(sparse_points)
         if len(pts) == 0:
             pts = np.random.uniform(-10, 10, (500, 3))
 
-        ctx.emit_progress(self.stage_id, self.stage_name, 20, "Executing Multi-View Stereo (MVS) depth fusion & normal estimation...")
+        ctx.emit_progress(
+            self.stage_id,
+            self.stage_name,
+            20,
+            "Executing Multi-View Stereo (MVS) depth fusion & normal estimation...",
+        )
 
         # Dense point cloud generation (densify by 4x for high-resolution visual)
         dense_points_list = []
@@ -79,7 +86,12 @@ class DenseReconstructionStage(BasePipelineStage):
 
         dense_pts = np.array(dense_points_list)
 
-        ctx.emit_progress(self.stage_id, self.stage_name, 60, f"Screened Poisson Surface Reconstruction (Octree depth 11) over {len(dense_pts):,} points...")
+        ctx.emit_progress(
+            self.stage_id,
+            self.stage_name,
+            60,
+            f"Screened Poisson Surface Reconstruction (Octree depth 11) over {len(dense_pts):,} points...",
+        )
 
         # Reconstruct mesh
         mesh, vertex_count, face_count = self.builder.reconstruct_mesh(dense_pts)
@@ -94,20 +106,25 @@ class DenseReconstructionStage(BasePipelineStage):
             "mesh_update": {
                 "vertices_count": vertex_count,
                 "faces_count": face_count,
-                "lod_level": 1
+                "lod_level": 1,
             }
         })
 
         ctx.emit_log(
             "DENSE_SURFACE",
             f"Generated {len(dense_pts):,} dense spatial points and {face_count:,} triangular mesh faces.",
-            "success"
+            "success",
         )
-        ctx.emit_progress(self.stage_id, self.stage_name, 100, f"Dense reconstruction complete: {face_count:,} faces.")
+        ctx.emit_progress(
+            self.stage_id,
+            self.stage_name,
+            100,
+            f"Dense reconstruction complete: {face_count:,} faces.",
+        )
 
         return {
             "dense_points_count": len(dense_pts),
             "mesh_faces_count": face_count,
             "mesh_vertices_count": vertex_count,
-            "throughput": "192,000 pts/s"
+            "throughput": "192,000 pts/s",
         }

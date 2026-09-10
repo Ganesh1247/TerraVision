@@ -1,10 +1,12 @@
-import pytest
-import numpy as np
-import tempfile
 import csv
+import tempfile
 from pathlib import Path
-from backend.app.pipeline.stages.s1_ingestion import IngestionStage
+
+import pytest
+
 from backend.app.pipeline.stages.base import StageContext
+from backend.app.pipeline.stages.s1_ingestion import IngestionStage
+
 
 @pytest.mark.asyncio
 async def test_synthetic_drone_ingestion():
@@ -13,13 +15,14 @@ async def test_synthetic_drone_ingestion():
         job_id="TEST-001",
         dataset_name="Test Substation",
         config={"keyframe_step": 1},
-        shared_state={}
+        shared_state={},
     )
     result = await stage.run(ctx)
     assert result["status"] == "complete"
     assert "keyframes" in ctx.shared_state
     assert len(ctx.shared_state["keyframes"]) > 0
     assert ctx.shared_state["total_frames"] == len(ctx.shared_state["keyframes"])
+
 
 @pytest.mark.asyncio
 async def test_imu_csv_parser():
@@ -35,7 +38,7 @@ async def test_imu_csv_parser():
         job_id="TEST-002",
         dataset_name="Test IMU",
         config={},
-        shared_state={"imu_path": str(csv_path)}
+        shared_state={"imu_path": str(csv_path)},
     )
     result = await stage.run(ctx)
     assert result["status"] == "complete"
