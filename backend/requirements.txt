@@ -2,7 +2,7 @@
 # Air-gapped offline edge computing for drone 3D reconstruction
 
 fastapi>=0.110.0
-uvicorn[standard]>=0.28.0
+uvicorn[standard]>=0.52.4
 pydantic>=2.6.0
 pydantic-settings>=2.2.0
 python-multipart>=0.0.9
